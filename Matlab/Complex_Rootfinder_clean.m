@@ -13,12 +13,15 @@ clc
 
 f = @(z) z.^4 - 16;
 % f1 = @(z) 4*z.^3;
-% kk = 2-0.5i;
-% kk2 = 0.1-0.2i;
+kk = 2-0.5i;
+kk2 = 1-1i;
 % f = @(z) sqrt(kk2^2-z.^2).*sqrt(z.^2-kk^2).*(z.^15-16)%.*(z.^4-16);
 % f = @(z) sqrt(kk2^2-z.^2).*sqrt(z.^2-kk^2)
-% f = @(z) sqrt(kk2^2-z.^2).*(z.^4-4);
+f = @(z) sqrt(kk2^2-z.^2).*(z.^4-4);
 % f = @(z) z.^15-16
+
+% function from rreusser finding roots in the complex plane
+% f = @(z) sqrt(z+5+3i)*sqrt(z+5-3i)
 %% input for determinant of elastic layer configuration
 
 % c_p = real(1.719084289205639e+03 + 3.322560356224935e+01i);
@@ -87,24 +90,67 @@ f = @(z) z.^4 - 16;
 % % surf(X,Y,angle(fz),'EdgeColor','none')
 % % surf(X,Y,abs(fz),'EdgeColor','none')
 % ylim([im_min,im_max])
-%% plotting for check?
+%% plotting contour, angle, and absolute value
+
 dx = 50e-3;
-re_min = -3;
-re_max = 3;
-im_min = -3;
-im_max = 3;
+
+re_min = -2.1;
+re_max = 2.1;
+im_min = -2.1;
+im_max = 2.1;
 
 % meshgrid and final complex value in matrix Z
-[X,Y] = meshgrid(re_min:dx:re_max,im_min:dx:im_max);
-Z = X + 1i.*Y;
+    [X,Y] = meshgrid(re_min:dx:re_max,im_min:dx:im_max);
+    Z = X + 1i.*Y;
+
 % clearvars X Y % delete variables X Y for saving memory
 
-figure
-contour(real(Z),imag(Z),real(f(Z)),'b--')
-hold on
-contour(real(Z),imag(Z),imag(f(Z)),'r-.')
-% surf(X,Y,angle(f(Z)),'EdgeColor','none')
 
+% plotting the contour
+    figure
+    contour(real(Z),imag(Z),real(f(Z)),'b--')
+    hold on
+    contour(real(Z),imag(Z),imag(f(Z)),'r-.')
+    hold off
+% plotting the angle
+    figure
+    surf(X,Y,angle(f(Z)),'EdgeColor','none')
+% plotting the absolute value    
+    figure
+    surf(X,Y,abs(f(Z)),'EdgeColor','none')
+
+%% Testing Argument principle code by Yaxi
+
+% integration step
+    re_length = re_max-re_min;
+    im_length = im_max-im_min;
+    w_step = min(0.01 * min(re_max - re_min, im_max - im_min), 0.0001);
+
+% number of roots
+%     Nroots = argument_principle_yaxi(f,re_min, re_max, im_min, im_max, w_step)
+    Nroots = argument_principle_yaxi_clean(f,re_min, re_max, im_min, im_max, w_step)
+
+%% Testing argument principle code by Rens
+
+ % Circle
+    Nint = 1e4;
+    z0 = mean(Z); % middle of the rectangle as z0
+    z0=0;
+    r0 = 0.5*sqrt(re_length^2+im_length^2); % radius of circle equal to diagonal of rectangular / square search domain
+    r0 = 3;
+    k = 0:1:Nint-1;
+    Zcirc = z0 + r0*exp(2*pi*1i.*k/Nint);
+
+% plotting
+    figure
+    contour(real(Z),imag(Z),real(f(Z)),'b--')
+    hold on
+    contour(real(Z),imag(Z),imag(f(Z)),'r-.')
+    plot(real(Zcirc),imag(Zcirc))
+    hold off    
+
+% Number of roots
+    Nroots2 = findnumberofroots(f,Zcirc,'option_der','numerical',z0,r0,Nint)
 
 %% testing methods
 
@@ -130,7 +176,7 @@ Npoints = length(Z);
 
 w_step = min(0.01 * min(re_max - re_min, im_max - im_min), 0.0001);
 
-Nroots = argument_principle(f,re_min, re_max, im_min, im_max, w_step)
+Nroots = argument_principle_yaxi(f,re_min, re_max, im_min, im_max, w_step)
 % Nroots2 = findnumberofroots(f,Z,'option_der','numerical',z0,r0,Npoints);
 
 %% other paper 
@@ -1249,458 +1295,11 @@ function R = findrootsindomain3(f,z0,r0,Npoints,Nroots,roots_prevfound)
 end
 
 %%
-function Nroots = findnumberofroots(f,Z,varargin)
-    
-    % check for symbolic derivative of the function
-    if any(strcmp(varargin,'df'))
-        f1 = varargin{find(strcmp(varargin,'df'))+1};    
-        option_der = 'symbolic';     % symbolic derivative has been given
-    else
-        option_der = 'numerical';    % second choice for derivative of function
-    end
-    
-    % check for which way to calculate derivative
-    if any(strcmp(varargin,'option_der'))
-        option_der = varargin{find(strcmp(varargin,'option_der'))+1};    % if option is given then use that
-    elseif strcmp(option_der,'symbolic')
-        % do nothing as symbolic has been chosen either by supplying df or
-        % choosing it above
-    else    
-        option_der = 'numerical';    % second choice for derivative of function
-    end
-    
-    % calculate number of roots
-    if strcmp(option_der,'symbolic') 
-        Nroots = trapz(Z,f1(Z)./f(Z)) / (2*pi*1i);
-
-    elseif strcmp(option_der,'numerical')
-        % or numerically calculating the derivative
-        dfdz = diff(f(Z))./diff(Z);
-
-        Nroots = trapz(Z(1:end-1),dfdz./f(Z(1:end-1))) / (2*pi*1i);    % and taking 1 point less because of the function diff 
-    elseif strcmp(option_der,'argp')
-        % Follow derivation Peter & Kravanja for derivativeless solution
-        Npoints = varargin{find(strcmp(varargin,'argp'))+3};
-        Args = zeros(Npoints,1)
-        for ii = 1:Npoints-1
-            Args(ii) = angle(f(Z(ii+1)/f(Z(ii))));
-        end
-        Args(Npoints) = angle(f(Z(1)/f(Z(Npoints))));
-        
-        Nroots = 1/2/pi*sum(Args)
-
-    elseif strcmp(option_der,'rootsofunity')
-        z0 = varargin{find(strcmp(varargin,'rootsofunity'))+1};
-        r0 = varargin{find(strcmp(varargin,'rootsofunity'))+2};
-        Npoints = varargin{find(strcmp(varargin,'rootsofunity'))+3};
-        
-        % determine Npoints based on a step size, aka circumference divided
-        % by the step size. however keep it to a maximum value 
-        step_size = 1e-6;
-        Npoints = round(2*pi*r0/step_size);
-        if Npoints > 1e4
-            Npoints = 1e4;
-        end
-
-        k = 0:1:Npoints-1;
-        Z = z0 + r0*exp(2*pi*1i.*k/Npoints);
-        n = Npoints;
-        fk = f(Z);
-        c = fft(fk)/n;
-        cp = (1:n-1).*c(2:end);
-        ppzk = n*ifft([cp 0])/r0;
-        
-        % by Austin / Kravanja
-        Nroots = (real(mean(Z.*ppzk./fk)));
-        % Delves and lynes but new paper approach of derivative
-%         Nroots = trapz(Z,ppzk./fk) / (2*pi*1i);
-        % fully numerical..
-%         Nroots = trapz(Z(1:end-1),(diff(fk)./diff(Z))./fk(1:end-1)) / (2*pi*1i);
-    end
-    
-
-%     % round to nearest integer
-%     Nroots = round(Nroots);
-    
-    % check for NaN or Inf values
-    if isnan(Nroots) || isinf(Nroots)
-        return
-    end
-    
-    % IF WE CROSS THE BRANCH CUT ONCE WE GET AN IMAGINARY VALUE OF 1/PI
-    % IF WE CROSS THE BRANCH CUT TWICE WE GET AN IMAGINARY VALUE OF 2/PI
-    % ETC...
-
-    % check for imaginary value because that means we crossed a
-    % branch cut
-    if round(imag(Nroots)/(1/pi)) ~= 0
-        % check how often 1/pi fits in the imaginary part and round it to
-        % get an integer which is the amount of times we cross a branch cut
-        N_BC = round(imag(Nroots)/(1/pi));
-        
-        % if the rounded real part is also equal to zero then we know there
-        % aren't any roots (or branch points) so we just stop the search
-        if round(real(Nroots)) == 0
-            Nroots = 0;
-            return
-        end
-        
-
-%         if mod(real(Nroots),0)-mod(real(Nroots),1) ~= 0 && round(mod(real(Nroots),1)) == 0
-%             % when we have whole integer values return also N_BC so we know
-%             % we must evade the branch cut (or use it later for something
-%             % else)
-%             Nroots = round(real(Nroots),2,'significant') + 1i*N_BC;
-        
-        % check if we have integer values or not and then round to the correct
-        % values (i.e. either 0.5, 1.5, 2.5, etc.) and return that value 
-        if mod(real(Nroots),0)-mod(real(Nroots),1) ~= 0
-            % when we have values of 1.5, 2.5, etc
-            Nroots = round(real(Nroots),2,'significant') + 1i*N_BC ;
-        else
-            % when we have a values of 0.5 (thus one branch point)
-            Nroots = round(real(Nroots),1,'significant') + 1i*N_BC;
-        end
-
-        return
-    end
-
-    % check whether the rounded value goes to zero, if so, make it zero and
-    % return that value
-    if round(Nroots) == 0
-        Nroots = 0;
-        return
-    end
-
-    % if the above is not true, round to nearest integer
-    Nroots = round(real(Nroots));
-end
-%%
-
-function new_circles = subdivide_8circles(z0,r0)
-
-    % function to divide initial circle into smaller circles
-    con_circle = [z0, r0/2];
-    r0_8 = 5*r0/12;
-    k_8 = (0:1:8-1).';
-    z0_8 = z0 + (3/4)*r0*exp(2*pi*1i.*k_8/8);
-    new_circles = [con_circle; ...
-                    z0_8, ones(8,1).*r0_8];
-end
 
 %%
 
-function n_sing = argument_principle(f,wr_min, wr_max, wi_min, wi_max, w_step)
-    % Initialize constants
-    branch_limit = 1e-10;
-    step_limit = 1e-25;
-    corner_limit = 1e-16;
 
-    % Initialize variables
-    n_sing_sucks = true;
-    step = w_step;
-    n_sing = 0;
-    n_sing_exact = 0;
-    n_sing_previous = 0;
-    calc_counter = 0;
-    wr_all = [wr_min,wr_max,wi_min,wi_max];
-    while n_sing_sucks
-        calc_counter = calc_counter + 1;
-        n_count = 0;
-        step_orig = step;
-        denom_cmplxA = zeros(4,1);
-        % Corner points
-        % 1st corner
-        wcA = wr_min + 1i * wi_max;
-        denom_cmplxA(1) = f(wcA); 
-        denom_realC1 = real(denom_cmplxA(1));
-        denom_imagC1 = imag(denom_cmplxA(1));
 
-        % 2nd corner
-        wcA = wr_max + 1i * wi_max;
-        denom_cmplxA(2) = f(wcA);
-        denom_realC2 = real(denom_cmplxA(2));
-        denom_imagC2 = imag(denom_cmplxA(2));
 
-        % 3rd corner
-        wcA = wr_max + 1i * wi_min;
-        denom_cmplxA(3) = f(wcA);
-        denom_realC3 = real(denom_cmplxA(3));
-        denom_imagC3 = imag(denom_cmplxA(3));
-
-        % 4th corner
-        wcA = wr_min + 1i * wi_min;
-        denom_cmplxA(4) = f(wcA);
-        denom_realC4 = real(denom_cmplxA(4));
-        denom_imagC4 = imag(denom_cmplxA(4));
-
-        % 1ST PART: THE HORIZONTAL PATH FROM THE 1ST TO THE 2ND CORNER
-        denom_realA = real(denom_cmplxA(1));
-        denom_imagA = imag(denom_cmplxA(1));
-        
-        wr = wr_min;
-        while wr < wr_max
-            if wr + step < wr_max
-                wrB = wr + step;
-                wcB = wrB + 1i * wi_max; % first point
-                denom_cmplxB = f(wcB);
-                denom_realB = real(denom_cmplxB);
-                denom_imagB = imag(denom_cmplxB);
-            else
-                wrB = wr_max;
-                step = wr_max - wr;
-                denom_realB = denom_realC2;
-                denom_imagB = denom_imagC2;
-            end
-        
-            if denom_realA * denom_realB < 0 && denom_imagA * denom_imagB < 0
-                step = 0.3 * step;
-                if step < step_limit
-                    disp(['kr stuck at ', num2str(wcB)]);
-                    disp(['det ', num2str(denom_cmplxB)]);
-                    disp(['real(kr)*imag(kr) ', num2str(real(wcB) * imag(wcB))]);
-                    
-%                     n_sing = 2001;
-%                     return;
-                end
-            else
-                if denom_realA > 0 && denom_imagA < 0 && denom_realB > 0 && denom_imagB > 0
-                    n_count = n_count + 1;
-                end
-                if denom_realA > 0 && denom_imagA > 0 && denom_realB < 0 && denom_imagB > 0
-                    n_count = n_count + 1;
-                end
-                if denom_realA < 0 && denom_imagA > 0 && denom_realB < 0 && denom_imagB < 0
-                    n_count = n_count + 1;
-                end
-                if denom_realA < 0 && denom_imagA < 0 && denom_realB > 0 && denom_imagB < 0
-                    n_count = n_count + 1;
-                end
-        
-                if denom_realA > 0 && denom_imagA > 0 && denom_realB > 0 && denom_imagB < 0
-                    n_count = n_count - 1;
-                end
-                if denom_realA < 0 && denom_imagA > 0 && denom_realB > 0 && denom_imagB > 0
-                    n_count = n_count - 1;
-                end
-                if denom_realA < 0 && denom_imagA < 0 && denom_realB < 0 && denom_imagB > 0
-                    n_count = n_count - 1;
-                end
-                if denom_realA > 0 && denom_imagA < 0 && denom_realB < 0 && denom_imagB < 0
-                    n_count = n_count - 1;
-                end
-        
-                denom_realA = denom_realB;
-                denom_imagA = denom_imagB;
-                step = step_orig;
-                wr = wrB;
-            end
-        end
-        % 2nd part: The vertical path from the 2nd to the 3rd corner
-        denom_realA = real(denom_cmplxA(2));
-        denom_imagA = imag(denom_cmplxA(2));
-        wi = wi_max;
-        
-        while wi > wi_min
-            if wi - step > wi_min
-                wiB = wi - step;
-                wcB = wr_max + 1i * wiB;
-                denom_cmplxB = f(wcB);
-                denom_realB = real(denom_cmplxB);
-                denom_imagB = imag(denom_cmplxB);
-            else
-                wiB = wi_min;
-                step = wi - wi_min;
-                denom_realB = denom_realC3;
-                denom_imagB = denom_imagC3;
-            end
-        
-            if denom_realA * denom_realB < 0 && denom_imagA * denom_imagB < 0
-                step = 0.3 * step;
-                if step < step_limit
-                    disp(['kr stuck at ', num2str(wcB)]);
-                    disp(['det ', num2str(denom_cmplxB)]);
-                    disp(['real(kr)*imag(kr) ', num2str(real(wcB) * imag(wcB))]);
-        
-%                     n_sing = 2002;
-%                     return;
-                end
-            else
-                if denom_realA > 0 && denom_imagA < 0 && denom_realB > 0 && denom_imagB > 0
-                    n_count = n_count + 1;
-                end
-                if denom_realA > 0 && denom_imagA > 0 && denom_realB < 0 && denom_imagB > 0
-                    n_count = n_count + 1;
-                end
-                if denom_realA < 0 && denom_imagA > 0 && denom_realB < 0 && denom_imagB < 0
-                    n_count = n_count + 1;
-                end
-                if denom_realA < 0 && denom_imagA < 0 && denom_realB > 0 && denom_imagB < 0
-                    n_count = n_count + 1;
-                end
-        
-                if denom_realA > 0 && denom_imagA > 0 && denom_realB > 0 && denom_imagB < 0
-                    n_count = n_count - 1;
-                end
-                if denom_realA < 0 && denom_imagA > 0 && denom_realB > 0 && denom_imagB > 0
-                    n_count = n_count - 1;
-                end
-                if denom_realA < 0 && denom_imagA < 0 && denom_realB < 0 && denom_imagB > 0
-                    n_count = n_count - 1;
-                end
-                if denom_realA > 0 && denom_imagA < 0 && denom_realB < 0 && denom_imagB < 0
-                    n_count = n_count - 1;
-                end
-                % Other conditions for counting
-        
-                denom_realA = denom_realB;
-                denom_imagA = denom_imagB;
-                step = step_orig;
-                wi = wiB;
-            end
-        end
-        % 3rd part: The horizontal path from the 3rd to the 4th corner
-        denom_realA = real(denom_cmplxA(3));
-        denom_imagA = imag(denom_cmplxA(3));
-        wr = wr_max;
-        
-        while wr > wr_min
-            if wr - step > wr_min
-                wrB = wr - step;
-                wcB = wrB + 1i * wi_min;
-        
-                denom_cmplxB = f(wcB);
-                denom_realB = real(denom_cmplxB);
-                denom_imagB = imag(denom_cmplxB);
-            else
-                wrB = wr_min;
-                step = wr - wr_min;
-                denom_realB = denom_realC4;
-                denom_imagB = denom_imagC4;
-            end
-        
-            if denom_realA * denom_realB < 0 && denom_imagA * denom_imagB < 0
-                step = 0.3 * step;
-               if step < step_limit
-                    disp(['kr stuck at ', num2str(wcB)]);
-                    disp(['det ', num2str(denom_cmplxB)]);
-                    disp(['real(kr)*imag(kr) ', num2str(real(wcB) * imag(wcB))]);
-        
-%                     n_sing = 2003;
-%                     return;
-                end
-            else
-                if denom_realA > 0 && denom_imagA < 0 && denom_realB > 0 && denom_imagB > 0
-                    n_count = n_count + 1;
-                end
-                if denom_realA > 0 && denom_imagA > 0 && denom_realB < 0 && denom_imagB > 0
-                    n_count = n_count + 1;
-                end
-                if denom_realA < 0 && denom_imagA > 0 && denom_realB < 0 && denom_imagB < 0
-                    n_count = n_count + 1;
-                end
-                if denom_realA < 0 && denom_imagA < 0 && denom_realB > 0 && denom_imagB < 0
-                    n_count = n_count + 1;
-                end
-        
-                if denom_realA > 0 && denom_imagA > 0 && denom_realB > 0 && denom_imagB < 0
-                    n_count = n_count - 1;
-                end
-                if denom_realA < 0 && denom_imagA > 0 && denom_realB > 0 && denom_imagB > 0
-                    n_count = n_count - 1;
-                end
-                if denom_realA < 0 && denom_imagA < 0 && denom_realB < 0 && denom_imagB > 0
-                    n_count = n_count - 1;
-                end
-                if denom_realA > 0 && denom_imagA < 0 && denom_realB < 0 && denom_imagB < 0
-                    n_count = n_count - 1;
-                end
-        
-                denom_realA = denom_realB;
-                denom_imagA = denom_imagB;
-                step = step_orig;
-                wr = wrB;
-            end
-        end
-        % 4th part: The vertical path from the 4th to the 1st corner
-        denom_realA = real(denom_cmplxA(4));
-        denom_imagA = imag(denom_cmplxA(4));
-        wi = wi_min;
-        
-        while wi < wi_max
-            if wi + step < wi_max
-                wiB = wi + step;
-                wcB = wr_min + 1i * wiB;
-                denom_cmplxB = f(wcB);
-        
-                denom_realB = real(denom_cmplxB);
-                denom_imagB = imag(denom_cmplxB);
-            else
-                wiB = wi_max;
-                step = wi_max - wi;
-                denom_realB = denom_realC1;
-                denom_imagB = denom_imagC1;
-            end
-        
-            if denom_realA * denom_realB < 0 && denom_imagA * denom_imagB < 0
-                step = 0.3 * step;
-                if step < step_limit
-                    disp(['kr stuck at ', num2str(wcB)]);
-                    disp(['det ', num2str(denom_cmplxB)]);
-                    disp(['real(kr)*imag(kr) ', num2str(real(wcB) * imag(wcB))]);
-        
-%                     n_sing = 2004;
-%                     return;
-                end
-            else
-                if denom_realA > 0 && denom_imagA < 0 && denom_realB > 0 && denom_imagB > 0
-                    n_count = n_count + 1;
-                end
-                if denom_realA > 0 && denom_imagA > 0 && denom_realB < 0 && denom_imagB > 0
-                    n_count = n_count + 1;
-                end
-                if denom_realA < 0 && denom_imagA > 0 && denom_realB < 0 && denom_imagB < 0
-                    n_count = n_count + 1;
-                end
-                if denom_realA < 0 && denom_imagA < 0 && denom_realB > 0 && denom_imagB < 0
-                    n_count = n_count + 1;
-                end
-        
-                if denom_realA > 0 && denom_imagA > 0 && denom_realB > 0 && denom_imagB < 0
-                    n_count = n_count - 1;
-                end
-                if denom_realA < 0 && denom_imagA > 0 && denom_realB > 0 && denom_imagB > 0
-                    n_count = n_count - 1;
-                end
-                if denom_realA < 0 && denom_imagA < 0 && denom_realB < 0 && denom_imagB > 0
-                    n_count = n_count - 1;
-                end
-                if denom_realA > 0 && denom_imagA < 0 && denom_realB < 0 && denom_imagB < 0
-                    n_count = n_count - 1;
-                end
-        
-                denom_realA = denom_realB;
-                denom_imagA = denom_imagB;
-                step = step_orig;
-                wi = wiB;
-            end
-        end
-
-        % Calculate n_sing and n_sing_exact
-        n_sing = abs(n_count / 4);
-        n_sing_exact = abs(n_count / 4);
-
-        % Check convergence criteria
-        if calc_counter == 1
-            step = step * 0.5;
-            n_sing_previous = n_sing;
-        elseif n_sing ~= n_sing_previous
-            step = step * 0.5;
-            n_sing_previous = n_sing;
-        else
-            n_sing_sucks = false;
-        end
-    end
-end
 
 
