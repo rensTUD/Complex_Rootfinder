@@ -17,7 +17,11 @@ kk = 2-0.5i;
 kk2 = 1-1i;
 % f = @(z) sqrt(kk2^2-z.^2).*sqrt(z.^2-kk^2).*(z.^15-16)%.*(z.^4-16);
 % f = @(z) sqrt(kk2^2-z.^2).*sqrt(z.^2-kk^2)
-f = @(z) sqrt(kk2^2-z.^2).*(z.^4-4);
+f1 = @(z) sqrt(kk2^2-z.^2).*(z.^4-4);
+f2 = @(z) -sqrt(kk2^2-z.^2).*(z.^4-4);
+f = @(z) f1(z);
+f = @(z) exp(sqrt(z.^2-kk2.^2));
+% f = @(z) f1(z).*f2(z);
 % f = @(z) z.^15-16
 
 % function from rreusser finding roots in the complex plane
@@ -94,10 +98,10 @@ f = @(z) sqrt(kk2^2-z.^2).*(z.^4-4);
 
 dx = 50e-3;
 
-re_min = -2.1;
-re_max = 2.1;
-im_min = -2.1;
-im_max = 2.1;
+re_min = -3;
+re_max = 3;
+im_min = -3;
+im_max = 3;
 
 % meshgrid and final complex value in matrix Z
     [X,Y] = meshgrid(re_min:dx:re_max,im_min:dx:im_max);
@@ -112,12 +116,18 @@ im_max = 2.1;
     hold on
     contour(real(Z),imag(Z),imag(f(Z)),'r-.')
     hold off
+    xlabel('Real(z)')
+    ylabel('Imag(z)')
 % plotting the angle
     figure
     surf(X,Y,angle(f(Z)),'EdgeColor','none')
+    xlabel('Real(z)')
+    ylabel('Imag(z)')
 % plotting the absolute value    
     figure
     surf(X,Y,abs(f(Z)),'EdgeColor','none')
+    xlabel('Real(z)')
+    ylabel('Imag(z)')
 
 %% Testing Argument principle code by Yaxi
 

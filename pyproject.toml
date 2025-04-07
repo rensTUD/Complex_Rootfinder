@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "complex_root_finder"
+version = "0.1.0"
+authors = [
+    { name = "Rens van Leijden", email = "rensvleijden@outlook.com" },
+]
+description = "A package for finding complex roots using the argument principle"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"] 

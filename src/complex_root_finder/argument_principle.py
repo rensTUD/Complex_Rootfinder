@@ -11,7 +11,7 @@ Created on Sat Oct  5 19:42:28 2024
 
 # %% functions
 
-def argument_principle(real_min, real_max, imag_min, imag_max, step_size, omega, det_func):
+def argument_principle(real_min, real_max, imag_min, imag_max, step_size, det_func):
     """
     argument_principle: Finds the number of roots of a complex analytic function.
 
@@ -49,8 +49,8 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, omega,
         original_step = step
 
         # First Part: Horizontal Path from real_min to real_max (top boundary)
-        current_real_value = det_func(complex(real_min, imag_max), omega).real
-        current_imag_value = det_func(complex(real_min, imag_max), omega).imag
+        current_real_value = det_func(complex(real_min, imag_max)).real
+        current_imag_value = det_func(complex(real_min, imag_max)).imag
 
         real_pos = real_min
 
@@ -63,7 +63,7 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, omega,
                 step = real_max - real_pos
                 next_wc = complex(real_max, imag_max)
 
-            next_value = det_func(next_wc, omega)
+            next_value = det_func(next_wc)
             next_real_value = next_value.real
             next_imag_value = next_value.imag
 
@@ -81,8 +81,8 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, omega,
                 real_pos = next_real_pos
 
         # Second Part: Vertical Path from imag_max to imag_min (right boundary)
-        current_real_value = det_func(complex(real_max, imag_max), omega).real
-        current_imag_value = det_func(complex(real_max, imag_max), omega).imag
+        current_real_value = det_func(complex(real_max, imag_max)).real
+        current_imag_value = det_func(complex(real_max, imag_max)).imag
 
         imag_pos = imag_max
 
@@ -95,7 +95,7 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, omega,
                 step = imag_pos - imag_min
                 next_wc = complex(real_max, imag_min)
 
-            next_value = det_func(next_wc, omega)
+            next_value = det_func(next_wc)
             next_real_value = next_value.real
             next_imag_value = next_value.imag
 
@@ -113,8 +113,8 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, omega,
                 imag_pos = next_imag_pos
 
         # Third Part: Horizontal Path from real_max to real_min (bottom boundary)
-        current_real_value = det_func(complex(real_max, imag_min), omega).real
-        current_imag_value = det_func(complex(real_max, imag_min), omega).imag
+        current_real_value = det_func(complex(real_max, imag_min)).real
+        current_imag_value = det_func(complex(real_max, imag_min)).imag
 
         real_pos = real_max
 
@@ -127,7 +127,7 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, omega,
                 step = real_pos - real_min
                 next_wc = complex(real_min, imag_min)
 
-            next_value = det_func(next_wc, omega)
+            next_value = det_func(next_wc)
             next_real_value = next_value.real
             next_imag_value = next_value.imag
 
@@ -145,8 +145,8 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, omega,
                 real_pos = next_real_pos
 
         # Fourth Part: Vertical Path from imag_min to imag_max (left boundary)
-        current_real_value = det_func(complex(real_min, imag_min), omega).real
-        current_imag_value = det_func(complex(real_min, imag_min), omega).imag
+        current_real_value = det_func(complex(real_min, imag_min)).real
+        current_imag_value = det_func(complex(real_min, imag_min)).imag
 
         imag_pos = imag_min
 
@@ -159,7 +159,7 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, omega,
                 step = imag_max - imag_pos
                 next_wc = complex(real_min, imag_max)
 
-            next_value = det_func(next_wc, omega)
+            next_value = det_func(next_wc)
             next_real_value = next_value.real
             next_imag_value = next_value.imag
 
@@ -223,5 +223,5 @@ def update_n_count(n_count, real_A, imag_A, real_B, imag_B):
         n_count -= 1
 
     return n_count
-
+ 
 

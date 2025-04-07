@@ -21,10 +21,10 @@ f = @(z) z.^4 - 16;
 % f = @(z) z.^15-16
 %% input for determinant of elastic layer configuration
 
-c_p = real(1.719084289205639e+03 + 3.322560356224935e+01i);
-c_s = real(3.704985415873700e+02 + 1.875674989161015e+01i);
-lambda = real(5.114035573342751e+09 + 1.649233839281022e+08i);
-mu = real(2.612383107677712e+08 + 2.651871379876653e+07i);
+c_p = (1.719084289205639e+03 + 3.322560356224935e+01i);
+c_s = (3.704985415873700e+02 + 1.875674989161015e+01i);
+lambda = (5.114035573342751e+09 + 1.649233839281022e+08i);
+mu = (2.612383107677712e+08 + 2.651871379876653e+07i);
 
 % c_p = 297;
 % c_s = 121;
@@ -33,29 +33,50 @@ mu = real(2.612383107677712e+08 + 2.651871379876653e+07i);
 % lambda = c_p^2*rho-2*mu;
 E = 7e7;
 nu = 0.4;
-rho = 1700
-% lambda = E*nu/((1+nu)*(1-2*nu));
+rho = 1700;
+rho_f = 1000;
+c_f = 1500;
+% lambda = E*nu/((1+nu)*(1-2*nu));k__z
 % mu = E/(2*(1+nu));
 % c_p = sqrt((lambda+2*mu)/rho)
 % c_s = sqrt(mu/rho)
 omega = 10*2*pi;
 H = 10;
+H0 = H;
+D0 = H;
 k_p = omega/c_p;
 k_s = omega/c_s;
+k_f = omega/c_f;
 
 
 % as matrix from which we take the determinant
 % with ux = + psi_y
-f = @(k_x) det([-i .* k_x -i .* exp(-i .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) .* H) .* k_x -i .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) i .* exp(-i .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) .* H) .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2); -i .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) i .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) .* exp(-i .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) .* H) i .* k_x i .* exp(-i .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) .* H) .* k_x; (-omega .^ 2 ./ c_p .^ 2 .* lambda - 2 .* (omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) .* mu) .* exp(-i .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) .* H) (-2 .* mu - lambda) .* (omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) - k_x .^ 2 .* lambda 2 .* k_x .* exp(-i .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) .* H) .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) .* mu -2 .* k_x .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) .* mu; -2 .* mu .* k_x .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) .* exp(-i .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) .* H) 2 .* mu .* k_x .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) mu .* exp(-i .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) .* H) .* (2 .* k_x .^ 2 - omega .^ 2 ./ c_s .^ 2) k_x .^ 2 .* mu - (omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) .* mu;]);
+% f = @(k_x) det([-i .* k_x -i .* exp(-i .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) .* H) .* k_x -i .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) i .* exp(-i .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) .* H) .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2); -i .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) i .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) .* exp(-i .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) .* H) i .* k_x i .* exp(-i .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) .* H) .* k_x; (-omega .^ 2 ./ c_p .^ 2 .* lambda - 2 .* (omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) .* mu) .* exp(-i .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) .* H) (-2 .* mu - lambda) .* (omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) - k_x .^ 2 .* lambda 2 .* k_x .* exp(-i .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) .* H) .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) .* mu -2 .* k_x .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) .* mu; -2 .* mu .* k_x .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) .* exp(-i .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) .* H) 2 .* mu .* k_x .* sqrt(omega .^ 2 ./ c_p .^ 2 - k_x .^ 2) mu .* exp(-i .* sqrt(omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) .* H) .* (2 .* k_x .^ 2 - omega .^ 2 ./ c_s .^ 2) k_x .^ 2 .* mu - (omega .^ 2 ./ c_s .^ 2 - k_x .^ 2) .* mu;]);
 
 % with ux = -psi_y
-% f =@(k_x) det([-i * k_x -i * exp(-i * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) * H) * k_x i * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2) -i * exp(-i * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2) * H) * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2); -i * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) i * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) * exp(-i * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) * H) -i * k_x -i * exp(-i * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2) * H) * k_x; (-omega ^ 2 / c_p ^ 2 * lambda - 2 * (omega ^ 2 / c_p ^ 2 - k_x ^ 2) * mu) * exp(-i * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) * H) (-2 * mu - lambda) * (omega ^ 2 / c_p ^ 2 - k_x ^ 2) - lambda * k_x ^ 2 -2 * mu * k_x * exp(-i * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2) * H) * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2) 2 * k_x * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2) * mu; -2 * mu * k_x * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) * exp(-i * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) * H) 2 * mu * k_x * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) -mu * exp(-i * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2) * H) * (2 * k_x ^ 2 - omega ^ 2 / c_s ^ 2) -k_x ^ 2 * mu + (omega ^ 2 / c_s ^ 2 - k_x ^ 2) * mu;]);
+f =@(k_x) det([-i * k_x -i * exp(-i * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) * H) * k_x i * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2) -i * exp(-i * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2) * H) * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2); -i * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) i * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) * exp(-i * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) * H) -i * k_x -i * exp(-i * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2) * H) * k_x; (-omega ^ 2 / c_p ^ 2 * lambda - 2 * (omega ^ 2 / c_p ^ 2 - k_x ^ 2) * mu) * exp(-i * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) * H) (-2 * mu - lambda) * (omega ^ 2 / c_p ^ 2 - k_x ^ 2) - lambda * k_x ^ 2 -2 * mu * k_x * exp(-i * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2) * H) * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2) 2 * k_x * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2) * mu; -2 * mu * k_x * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) * exp(-i * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) * H) 2 * mu * k_x * sqrt(omega ^ 2 / c_p ^ 2 - k_x ^ 2) -mu * exp(-i * sqrt(omega ^ 2 / c_s ^ 2 - k_x ^ 2) * H) * (2 * k_x ^ 2 - omega ^ 2 / c_s ^ 2) -k_x ^ 2 * mu + (omega ^ 2 / c_s ^ 2 - k_x ^ 2) * mu;]);
 % 
 % % as function directly
 % % with ux = -psi_y
 f = @(k_x) 32 .* ((((-(0.1e1 ./ 0.16e2) - exp(-2.*i .* H .* (sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) + sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2))) ./ 16 - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) .* H) ./ 16 - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) .* H) ./ 16) .* mu + (-(0.1e1 ./ 0.32e2) - exp(-2.*i .* H .* (sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) + sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2))) ./ 32 - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) .* H) ./ 32 - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) .* H) ./ 32) .* lambda) .* (omega .^ 4) - (-(0.1e1 ./ 0.4e1) - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) .* H) ./ 4 - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) .* H) ./ 4 - exp(-2.*i .* H .* (sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) + sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2))) ./ 4 + exp(-i .* H .* (sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) + sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2)))) .* (mu .* (c_p .^ 2) + 2 .* (c_s .^ 2) .* (mu + lambda ./ 2)) .* (k_x .^ 2) .* (omega .^ 2) ./ 4 + (-(0.1e1 ./ 0.4e1) - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) .* H) ./ 4 - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) .* H) ./ 4 - exp(-2.*i .* H .* (sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) + sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2))) ./ 4 + exp(-i .* H .* (sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) + sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2)))) .* (c_p .^ 2) .* (c_s .^ 2) .* mu .* (k_x .^ 4)) .* sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) .* sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) + (exp(-2.*i .* sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) .* H) + exp(-2.*i .* sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) .* H) - exp(-2.*i .* H .* (sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) + sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2))) - 1) .* ((omega .^ 4) .* ((0.3e1 ./ 0.4e1) .* mu + lambda ./ 8) - (0.3e1 ./ 0.4e1) .* (mu .* (c_p .^ 2) + (0.4e1 ./ 0.3e1) .* (c_s .^ 2) .* (mu + lambda ./ 4)) .* (k_x .^ 2) .* (omega .^ 2) + (c_p .^ 2) .* (c_s .^ 2) .* (k_x .^ 4) .* mu) .* (k_x .^ 2) ./ 4) .* mu ./ (c_p .^ 2) ./ (c_s .^ 2);
 % with ux = + psi_y
 % f = @(k_x) 32 .* (sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) .* (((-exp(-2.*i .* H .* (sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) + sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2))) ./ 16 - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) .* H) ./ 16 - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) .* H) ./ 16 - (0.1e1 ./ 0.16e2)) .* mu + (-exp(-2.*i .* H .* (sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) + sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2))) ./ 32 - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) .* H) ./ 32 - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) .* H) ./ 32 - (0.1e1 ./ 0.32e2)) .* lambda) .* (omega .^ 4) - (-(0.1e1 ./ 0.4e1) - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) .* H) ./ 4 - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) .* H) ./ 4 - exp(-2.*i .* H .* (sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) + sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2))) ./ 4 + exp(-i .* H .* (sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) + sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2)))) .* (k_x .^ 2) .* (mu .* (c_p .^ 2) + 2 .* (mu + lambda ./ 2) .* (c_s .^ 2)) .* (omega .^ 2) ./ 4 + (-(0.1e1 ./ 0.4e1) - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) .* H) ./ 4 - exp(-2.*i .* sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) .* H) ./ 4 - exp(-2.*i .* H .* (sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) + sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2))) ./ 4 + exp(-i .* H .* (sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) + sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2)))) .* (k_x .^ 4) .* (c_p .^ 2) .* mu .* (c_s .^ 2)) .* sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) + (k_x .^ 2) .* (exp(-2.*i .* sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2) .* H) + exp(-2.*i .* sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) .* H) - exp(-2.*i .* H .* (sqrt((-k_x .^ 2 .* c_s .^ 2 + omega .^ 2) ./ c_s .^ 2) + sqrt((-k_x .^ 2 .* c_p .^ 2 + omega .^ 2) ./ c_p .^ 2))) - 1) .* ((omega .^ 4) .* ((0.3e1 ./ 0.4e1) .* mu + lambda ./ 8) - (0.3e1 ./ 0.4e1) .* (k_x .^ 2) .* (mu .* (c_p .^ 2) + (0.4e1 ./ 0.3e1) .* (mu + lambda ./ 4) .* (c_s .^ 2)) .* (omega .^ 2) + (c_p .^ 2) .* (c_s .^ 2) .* (k_x .^ 4) .* mu) ./ 4) .* mu ./ (c_p .^ 2) ./ (c_s .^ 2);
+% z__1 = H;
+% z__2 = H/2;
+% sigma__i = 1;
+% sigma__r = 1;
+% f = @(k_r) (-(0.2e1 .* sin((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__r) .^ 2) + -4.*i .* cos((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__r) .* sin((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__r) + (0.2e1 .* cos((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__r) .^ 2)) .* (cosh((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__i) .^ 2) + 8 .* sinh((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__i) .* (i .* cos((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__r) .* sin((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__r) - (cos((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__r) .^ 2 ./ 0.2e1) + (sin((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__r) .^ 2 ./ 0.2e1)) .* cosh((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__i) + (-(0.2e1 .* sin((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__r) .^ 2) + -4.*i .* cos((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__r) .* sin((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__r) + (0.2e1 .* cos((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__r) .^ 2)) .* (sinh((k_f.^2-k_r.^2).^(1./2) .* (z__1 - z__2) .* sigma__i) .^ 2) + -4.*i .* cos((k_f.^2-k_r.^2).^(1./2) .* z__1) .* sin((k_f.^2-k_r.^2).^(1./2) .* z__1) + (0.2e1 .* cos((k_f.^2-k_r.^2).^(1./2) .* z__1) .^ 2) - (0.2e1 .* sin((k_f.^2-k_r.^2).^(1./2) .* z__1) .^ 2);
+
+%%
+%k_f = 0.041%-0.001i
+% k_r = 1-1i
+% k__z = (k_r.^2-k_f.^2).^(1/2)
+% M = [1 exp(-k__z * z__1) 0 0; -exp(-k__z * z__1) 1 -i i * exp((-z__1 + z__2) * k__z * (sigma__i + i * sigma__r)); exp(-k__z * z__1) 1 -1 -exp((-z__1 + z__2) * k__z * (sigma__i + i * sigma__r)); 0 0 i * exp((-z__1 + z__2) * k__z * (sigma__i + i * sigma__r)) -i;];
+
+
+
+
+
 %% plotting for check
 dx = 5e-3;
 re_min = -max(real(k_s))/0.2;
@@ -94,14 +115,14 @@ plot(c,d,'--k', 'LineWidth',0.5)
 scatter(real(omega/c_p),imag(omega/c_p),'magenta')
 scatter(real(omega/c_s),imag(omega/c_s),'cyan')
 % surf(X,Y,angle(fz),'EdgeColor','none')
-% surf(X,Y,abs(fz),'EdgeColor','none')
+surf(X,Y,abs(fz),'EdgeColor','none')
 ylim([im_min,im_max])
 %% plotting for check?
-dx = 50e-3;
-re_min = -2;
-re_max = 2;
-im_min = -2;
-im_max = 2;
+dx = 10e-3;
+re_min = -4;
+re_max = 4;
+im_min = -4;
+im_max = 4;
 
 % meshgrid and final complex value in matrix Z
 [X,Y] = meshgrid(re_min:dx:re_max,im_min:dx:im_max);
@@ -113,19 +134,20 @@ contour(real(Z),imag(Z),real(f(Z)),'b--')
 hold on
 contour(real(Z),imag(Z),imag(f(Z)),'r-.')
 % surf(X,Y,angle(f(Z)),'EdgeColor','none')
+surf(X,Y,abs(f(Z)),'EdgeColor','none')
 
 
 %% testing methods
 
-% Z = Vertices_Rectangular(re_min,re_max,im_min,im_max,'Npoints',1e6);
+Z = Vertices_Rectangular(re_min,re_max,im_min,im_max,'Npoints',1e6);
+
+re_length = re_max-re_min;
+im_length = im_max-im_min;
+% initial circle
+z0 = mean(Z); % middle of the rectangle as z0
+r0 = 0.5*sqrt(re_length^2+im_length^2); % radius of circle equal to diagonal of rectangular / square search domain
 % 
-% re_length = re_max-re_min;
-% im_length = im_max-im_min;
-% % initial circle
-% z0 = mean(Z); % middle of the rectangle as z0
-% r0 = 0.5*sqrt(re_length^2+im_length^2); % radius of circle equal to diagonal of rectangular / square search domain
-% 
-% Npoints = length(Z);
+Npoints = length(Z);
 % 
 % % Args = zeros(Npoints,1);
 % % for ii = 1:Npoints-1
@@ -1282,9 +1304,9 @@ function Nroots = findnumberofroots(f,Z,varargin)
 
     elseif strcmp(option_der,'numerical')
         % or numerically calculating the derivative
-        dfdz = diff(f(Z))./diff(Z);
-
-        Nroots = trapz(Z(1:end-1),dfdz./f(Z(1:end-1))) / (2*pi*1i);    % and taking 1 point less because of the function diff 
+%         dfdz = diff(f(Z))./diff(Z);
+        dfdz = approx_deriv(@(z) f(z), Z);
+        Nroots = trapz(Z,dfdz./f(Z)) / (2*pi*1i);    % and taking 1 point less because of the function diff 
     elseif strcmp(option_der,'argp')
         % Follow derivation Peter & Kravanja for derivativeless solution
         Npoints = varargin{find(strcmp(varargin,'argp'))+3};
@@ -1709,3 +1731,9 @@ function n_sing = argument_principle(f,wr_min, wr_max, wi_min, wi_max, w_step)
         end
     end
 end
+
+function df = approx_deriv(f, Z)
+    h = 1e-5;
+    df = (-f(Z + 2*h) + 8*f(Z + h) - 8*f(Z - h) + f(Z - 2*h)) / (12*h);
+end
+

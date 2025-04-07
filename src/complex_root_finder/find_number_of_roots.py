@@ -13,6 +13,20 @@ from scipy.fft import fft, ifft
 
 # %%
 
+def approx_deriv(f, Z):
+    """
+    Compute derivative using 4th order accurate finite difference.
+    
+    Args:
+        f: callable, the function to differentiate
+        Z: array-like, points at which to evaluate the derivative
+    
+    Returns:
+        array-like: The approximated derivative values
+    """
+    h = 1e-5
+    return (-f(Z + 2*h) + 8*f(Z + h) - 8*f(Z - h) + f(Z - 2*h)) / (12*h)
+
 def find_number_of_roots(f, Z, option_der='numerical', df=None, **kwargs):
     """
     Estimates the number of roots of a complex-valued function `f` in a given domain.
@@ -40,9 +54,9 @@ def find_number_of_roots(f, Z, option_der='numerical', df=None, **kwargs):
         Nroots = simps(df(Z) / f(Z), Z) / (2 * np.pi * 1j)
     
     elif option_der == 'numerical':
-        # Numerically calculate the derivative
-        dfdz = np.diff(f(Z)) / np.diff(Z)
-        Nroots = simps(dfdz / f(Z[:-1]), Z[:-1]) / (2 * np.pi * 1j)
+        # Use 4th order accurate finite difference
+        dfdz = approx_deriv(f, Z)
+        Nroots = simps(dfdz / f(Z), Z) / (2 * np.pi * 1j)
     
     elif option_der == 'argp':
         # Derivation without explicit derivative (Peter & Kravanja method)
