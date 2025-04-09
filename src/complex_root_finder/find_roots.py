@@ -1,10 +1,21 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Apr  7 15:20:28 2025
+
+@author: RensvanLeijden
+"""
+
 # %% IMPORTS
 
+# imports of python libraries
 import numpy as np
 from typing import Callable
-from .count_roots import approx_deriv
 from scipy.fft import fft, ifft
 from scipy.linalg import hankel, eig
+
+# imports from curent library
+from .utils import finite_difference_first_derivative_4th_order
+from .contours import ContourBase
 
 # %% FUNCTION DEFNITIONS
 
@@ -41,7 +52,7 @@ def newtons_identities(s_N, n_roots):
 
 def find_roots_delves_lynes(
     f: Callable[[np.ndarray], np.ndarray],
-    Z: np.ndarray,
+    contour: ContourBase,
     n_roots: int,
     df: Callable[[np.ndarray], np.ndarray] | None = None,
     previous_roots: np.ndarray | None = None
@@ -54,8 +65,8 @@ def find_roots_delves_lynes(
     ----------
     f : callable 
             the function to analyze
-    Z : array-like
-        points along the path        
+    contour: ContourBase
+            Contour class       
     n_roots : int
         Number of roots to be found, determines the order of the polynomial
     df : Callable[[np.ndarray], np.ndarray] | None, optional
@@ -68,9 +79,12 @@ def find_roots_delves_lynes(
     roots
         list of the found roots
     """
+    # get Z
+    Z = contour.Z
+    
     # Get the derivative
     if df is None:
-        df = approx_deriv(f, Z)
+        df = finite_difference_first_derivative_4th_order(f, Z)
     else:
         df = df(Z)
     
@@ -95,8 +109,7 @@ def find_roots_delves_lynes(
 
 def find_roots_austin_kravanja(
     f: Callable[[np.ndarray], np.ndarray],
-    z0: float | complex,
-    r0: float,
+    contour: ContourBase,
     n_roots: int,
     step_size: float = 1e-6,
     max_points: int = 2**14,
@@ -110,8 +123,8 @@ def find_roots_austin_kravanja(
     ----------
     f : callable 
             the function to analyze
-    Z : array-like
-        points along the path        
+    contour: ContourBase
+            Contour class  
     n_roots : int
         Number of roots to be found, determines the order of the polynomial
     df : Callable[[np.ndarray], np.ndarray] | None, optional
@@ -124,8 +137,12 @@ def find_roots_austin_kravanja(
     roots
         list of the found roots
     """
+    # get radius and center from contour
+    radius = contour.radius
+    center = contour.center
+    
     # Estimate number of points based on arc length / step_size
-    arc_length = 2 * np.pi * r0
+    arc_length = 2 * np.pi * radius
     n_est = int(np.ceil(arc_length / step_size))
 
     # Use next power of 2, capped by max_points
@@ -134,14 +151,14 @@ def find_roots_austin_kravanja(
     # Discrete roots of unity (equally spaced points on circle)
     k = np.arange(Npoints)
     theta = 2 * np.pi * k / Npoints
-    Z = z0 + r0 * np.exp(1j * theta)
+    Z = center + radius * np.exp(1j * theta)
 
     fk = f(Z)
     c = fft(fk) / Npoints
 
     # Derivative of FFT terms (equivalent to analytic derivative)
     cp = np.arange(1, Npoints) * c[1:]
-    ppzk = Npoints * ifft(np.concatenate((cp, [0]))) / r0
+    ppzk = Npoints * ifft(np.concatenate((cp, [0]))) / radius
     
     s = ifft(ppzk/fk)
     
@@ -156,7 +173,7 @@ def find_roots_austin_kravanja(
     
     # get eigenvalues as roots and scale with r0 and translate by z0
     eigvals = eig(H2, H, right=False)
-    roots = r0 * eigvals + z0
+    roots = radius * eigvals + center
     
     return roots
 

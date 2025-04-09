@@ -7,38 +7,21 @@ Created on Sat Oct  5 20:47:51 2024
 
 # %%
 
+# imports from python libraries
 import numpy as np
-from scipy.integrate import trapezoid
 from scipy.fft import fft, ifft
 from typing import Callable
 
+# imports from current library
+from .utils import finite_difference_first_derivative_4th_order
+from .contours import ContourBase, CircleContour
 # %%
 
-def approx_deriv(
-    f: Callable[[np.ndarray], np.ndarray], 
-    Z
-):
-    """
-    Compute derivative using 4th order accurate finite difference.
-    
-    Parameters
-    ----------
-        f : callable 
-            the function to differentiate
-        Z : array-like
-            points at which to evaluate the derivative
-    
-    Returns:
-    -------
-        array-like
-            The approximated derivative values
-    """
-    h = 1e-5
-    return (-f(Z + 2*h) + 8*f(Z + h) - 8*f(Z - h) + f(Z - 2*h)) / (12*h)
+
 
 def count_roots_numerical(
     f: Callable[[np.ndarray], np.ndarray], 
-    Z, 
+    contour: ContourBase,
     df = None
 ):
     """
@@ -48,8 +31,8 @@ def count_roots_numerical(
     ----------
         f : callable 
             the function to analyze
-        Z : array-like
-            points along the path
+        contour: ContourBase
+            Contour class 
         df : callable, optional
             the derivative of f
     
@@ -58,8 +41,11 @@ def count_roots_numerical(
         float 
             The number of roots
     """
+    # get Z from contour
+    Z = contour.Z
+    
     if df is None:
-        df = approx_deriv(f, Z)
+        df = finite_difference_first_derivative_4th_order(f, Z)
     else:
         df = df(Z)
     
@@ -71,8 +57,7 @@ def count_roots_numerical(
 
 def count_roots_unity(
     f: Callable[[np.ndarray], np.ndarray],
-    z0: complex,
-    r0: float,
+    contour: ContourBase,
     step_size: float = 1e-6,
     max_points: int = 2**14,
 ) -> float:
@@ -84,10 +69,8 @@ def count_roots_unity(
     ----------
     f : Callable[[np.ndarray], np.ndarray]
         Analytic function to analyze, vectorized over complex inputs.
-    z0 : complex
-        Center of the circular contour.
-    r0 : float
-        Radius of the contour.
+    contour: ContourBase
+            Contour class 
     step_size : float, optional
         Step size for arc length sampling (default is 1e-6).
     max_points : int, optional
@@ -98,8 +81,12 @@ def count_roots_unity(
     float
         Estimated number of roots inside the contour.
     """
+    # get r0 and z0 from contour
+    radius = contour.radius
+    center = contour.center
+                
     # Estimate number of points based on arc length / step_size
-    arc_length = 2 * np.pi * r0
+    arc_length = 2 * np.pi * radius
     n_est = int(np.ceil(arc_length / step_size))
 
     # Use next power of 2, capped by max_points
@@ -108,14 +95,14 @@ def count_roots_unity(
     # Discrete roots of unity (equally spaced points on circle)
     k = np.arange(Npoints)
     theta = 2 * np.pi * k / Npoints
-    Z = z0 + r0 * np.exp(1j * theta)
+    Z = center + radius * np.exp(1j * theta)
 
     fk = f(Z)
     c = fft(fk) / Npoints
 
     # Derivative of FFT terms (equivalent to analytic derivative)
     cp = np.arange(1, Npoints) * c[1:]
-    ppzk = Npoints * ifft(np.concatenate((cp, [0]))) / r0
+    ppzk = Npoints * ifft(np.concatenate((cp, [0]))) / radius
 
     # Apply formula: mean of Z * f'(Z) / f(Z) to get number of roots
     n_roots =  np.real(np.mean(Z * ppzk / fk))

@@ -1,9 +1,17 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Apr  7 15:20:28 2025
+
+@author: RensvanLeijden
+"""
+
 # %% IMPORTS
 
 import numpy as np
 from typing import Callable, Dict, Tuple
 from complex_root_finder.argument_principle import argument_principle
-from complex_root_finder import count_roots_numerical, count_roots_unity, find_roots_delves_lynes, find_roots_austin_kravanja
+from complex_root_finder import count_roots_numerical, count_roots_unity, find_roots_delves_lynes, find_roots_austin_kravanja, RectangleContour, CircleContour
+
 import time
 
 
@@ -35,72 +43,6 @@ TEST_FUNCTIONS: Dict[str, Dict] = {
         'description': 'f(z) = z⁴ - 16'
     }
 }
-
-def create_rectangle_contour(
-    real_min: float,
-    real_max: float,
-    imag_min: float,
-    imag_max: float,
-    n_points: int = 1e6
-) -> np.ndarray:
-    """
-    Create a rectangular contour for testing.
-    
-    Parameters
-    ----------
-    real_min, real_max : float
-        Real axis bounds
-    imag_min, imag_max : float
-        Imaginary axis bounds
-    n_points : int
-        Number of points in the contour
-        
-    Returns
-    -------
-    np.ndarray
-        Complex points along the contour
-    """
-    # Create points along the rectangle
-    n_points = int(n_points)
-    real_points = np.linspace(real_min, real_max, n_points)
-    imag_points = np.linspace(imag_min, imag_max, n_points)
-    
-    # Create the contour points
-    contour = np.concatenate([
-        real_points + 1j*imag_min,  # Bottom edge
-        real_max + 1j*imag_points,  # Right edge
-        np.flip(real_points) + 1j*imag_max,  # Top edge
-        real_min + 1j*np.flip(imag_points)   # Left edge
-    ])
-    
-    return contour
-
-def create_circular_contour(
-    center: complex,
-    radius: float,
-    n_points: int = int(1e4)
-) -> np.ndarray:
-    """
-    Create a circular contour in the complex plane.
-
-    Parameters
-    ----------
-    center : complex
-        Center of the circular contour.
-    radius : float
-        Radius of the circle.
-    n_points : int, optional
-        Number of points along the circular path (default is 10,000).
-
-    Returns
-    -------
-    np.ndarray
-        Complex points along the circular contour, forming a closed loop.
-    """
-    n_points = int(n_points)
-    theta = np.linspace(0, 2 * np.pi, n_points, endpoint=True)
-    Z = center + radius * np.exp(1j * theta)
-    return Z
 
 def test_root_counting_method(
     method: Callable,
@@ -145,26 +87,26 @@ def test_root_counting_method(
             step_size=0.1
         )
     elif method_name == 'symbolic':
-        contour = create_rectangle_contour(*bounds)
+        contour = RectangleContour(*bounds)
         n_roots = method(
             f=test_func['func'],
-            Z=contour,
+            contour=contour,
             df=test_func['derivative']
         )
     elif method_name == 'numerical':
-        contour = create_rectangle_contour(*bounds)
+        contour = RectangleContour(*bounds)
         n_roots = method(
             f=test_func['func'],
-            Z=contour
+            contour=contour
         )
     elif method_name == 'unity':
         # For unity method, use a circle that contains all roots
         center = (bounds[0] + bounds[1])/2 + 1j*(bounds[2] + bounds[3])/2
         radius = max(bounds[1] - bounds[0], bounds[3] - bounds[2])/2
+        contour = CircleContour(center,radius)
         n_roots = method(
             f=test_func['func'],
-            z0=center,
-            r0=radius
+            contour=contour
         )
     
     # End timing
@@ -215,47 +157,47 @@ def test_root_finding_method(
     start_time = time.perf_counter()
     
     if method_name == 'delves_lynes_rectangle_df_known':
-        contour = create_rectangle_contour(*bounds)
+        contour = RectangleContour(*bounds)
         found_roots = method(
             f=test_func['func'],
-            Z=contour,
+            contour=contour,
             n_roots=len(test_func['roots']),
             df=test_func['derivative']
         )
     elif method_name == 'delves_lynes_circle_df_known':
         center = (bounds[0] + bounds[1])/2 + 1j*(bounds[2] + bounds[3])/2
         radius = max(bounds[1] - bounds[0], bounds[3] - bounds[2])/2
-        contour = create_circular_contour(center,radius)
+        contour = CircleContour(center,radius)
         found_roots = method(
             f=test_func['func'],
-            Z=contour,
+            contour=contour,
             n_roots=len(test_func['roots']),
             df=test_func['derivative']
         )
     elif method_name == 'delves_lynes_rectangle':
-        contour = create_rectangle_contour(*bounds)
+        contour = RectangleContour(*bounds)
         found_roots = method(
             f=test_func['func'],
-            Z=contour,
+            contour=contour,
             n_roots=len(test_func['roots']),
         )
     elif method_name == 'delves_lynes_circle':
         center = (bounds[0] + bounds[1])/2 + 1j*(bounds[2] + bounds[3])/2
         radius = max(bounds[1] - bounds[0], bounds[3] - bounds[2])/2
-        contour = create_circular_contour(center,radius)
+        contour = CircleContour(center,radius)
         found_roots = method(
             f=test_func['func'],
-            Z=contour,
+            contour=contour,
             n_roots=len(test_func['roots']),
         )
     elif method_name == 'austin_kravanja':
         # For unity method, use a circle that contains all roots
         center = (bounds[0] + bounds[1])/2 + 1j*(bounds[2] + bounds[3])/2
         radius = max(bounds[1] - bounds[0], bounds[3] - bounds[2])/2
+        contour = CircleContour(center,radius)
         found_roots = method(
             f=test_func['func'],
-            z0=center,
-            r0=radius,
+            contour=contour,
             n_roots=len(test_func['roots']),
         )
 

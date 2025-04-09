@@ -1,0 +1,126 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Apr 9 20:02:28 2025
+
+@author: RensvanLeijden
+"""
+
+# %% IMPORTS
+import numpy as np
+import matplotlib.pyplot as plt
+from complex_root_finder import ComplexRootFinder, RectangleContour, CircleContour
+
+
+# %% TEST 1 - single soil layer?
+
+# %%% INPUTS
+c_p = 1.719084289205639e+03 + 3.322560356224935e+01j
+c_s = 3.704985415873700e+02 + 1.875674989161015e+01j
+Lambda = 5.114035573342751e+09 + 1.649233839281022e+08j
+mu = 2.612383107677712e+08 + 2.651871379876653e+07j
+
+
+E = 7e7
+nu = 0.4
+rho = 1700
+rho_f = 1000
+c_f = 1500
+
+
+omega = 10*2*np.pi
+H = 10
+H0 = H
+D0 = H
+k_p = omega/c_p
+k_s = omega/c_s
+k_f = omega/c_f
+
+def f1(k_x): 
+    return 32 * ((((-(0.1e1 / 0.16e2) - np.exp(-2*1j * H * (np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 16 - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 16 - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 16) * mu + (-(0.1e1 / 0.32e2) - np.exp(-2*1j * H * (np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 32 - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 32 - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 32) * Lambda) * (omega ** 4) - (-(0.1e1 / 0.4e1) - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 4 - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 4 - np.exp(-2*1j * H * (np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 4 + np.exp(-1j * H * (np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2)))) * (mu * (c_p ** 2) + 2 * (c_s ** 2) * (mu + Lambda / 2)) * (k_x ** 2) * (omega ** 2) / 4 + (-(0.1e1 / 0.4e1) - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 4 - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 4 - np.exp(-2*1j * H * (np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 4 + np.exp(-1j * H * (np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2)))) * (c_p ** 2) * (c_s ** 2) * mu * (k_x ** 4)) * np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + (np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) + np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) - np.exp(-2*1j * H * (np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) - 1) * ((omega ** 4) * ((0.3e1 / 0.4e1) * mu + Lambda / 8) - (0.3e1 / 0.4e1) * (mu * (c_p ** 2) + (0.4e1 / 0.3e1) * (c_s ** 2) * (mu + Lambda / 4)) * (k_x ** 2) * (omega ** 2) + (c_p ** 2) * (c_s ** 2) * (k_x ** 4) * mu) * (k_x ** 2) / 4) * mu / (c_p ** 2) / (c_s ** 2)
+def f2(k_x): 
+    return 32 * ((((-(0.1e1 / 0.16e2) - np.exp(-2*1j * H * (-np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 16 - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 16 - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 16) * mu + (-(0.1e1 / 0.32e2) - np.exp(-2*1j * H * (-np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 32 - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 32 - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 32) * Lambda) * (omega ** 4) - (-(0.1e1 / 0.4e1) - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 4 - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 4 - np.exp(-2*1j * H * (-np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 4 + np.exp(-1j * H * (-np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2)))) * (mu * (c_p ** 2) + 2 * (c_s ** 2) * (mu + Lambda / 2)) * (k_x ** 2) * (omega ** 2) / 4 + (-(0.1e1 / 0.4e1) - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 4 - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 4 - np.exp(-2*1j * H * (-np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 4 + np.exp(-1j * H * (-np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2)))) * (c_p ** 2) * (c_s ** 2) * mu * (k_x ** 4)) * -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * -np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + (np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) + np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) - np.exp(-2*1j * H * (-np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) - 1) * ((omega ** 4) * ((0.3e1 / 0.4e1) * mu + Lambda / 8) - (0.3e1 / 0.4e1) * (mu * (c_p ** 2) + (0.4e1 / 0.3e1) * (c_s ** 2) * (mu + Lambda / 4)) * (k_x ** 2) * (omega ** 2) + (c_p ** 2) * (c_s ** 2) * (k_x ** 4) * mu) * (k_x ** 2) / 4) * mu / (c_p ** 2) / (c_s ** 2)
+def f(k_x): 
+    return f1(k_x)*f2(k_x)
+    
+
+# --- Parameters ---
+dx = 5e-3
+real_min = -np.max(np.real(k_s)) / 0.2
+real_max = np.max(np.real(k_s)) / 0.2
+imag_min = -3
+imag_max = 50e-6  # 50d-6 in MATLAB is just scientific notation
+
+# %%% PLOTTING
+
+# Create meshgrid and complex matrix Z
+x = np.arange(real_min, real_max + dx, dx)
+y = np.arange(imag_min, imag_max + dx, dx)
+X, Y = np.meshgrid(x, y)
+Z = X + 1j * Y
+
+# Evaluate f(z) on the grid
+fz = np.vectorize(f)(Z)  # assuming f can be vectorized
+
+# --- Optional plotting curves ---
+del_ = 0
+a = np.arange(1e-6, np.real(k_p), 1e-5)
+b = np.real(k_p) * np.imag(k_p) / a
+b0 = (np.real(k_p) * np.imag(k_p)) * (1 + 1e-10) / a
+
+c = np.arange(1e-6, np.real(k_s), 1e-5)
+d = np.real(k_s) * np.imag(k_s) / c
+d0 = (-del_ + np.real(k_s) * np.imag(k_s)) * (1 - 1e-10) / c
+
+# --- Plot ---
+fig, ax = plt.subplots(figsize=(10, 6))
+
+# Contours
+cont1 = ax.contour(np.real(Z), np.imag(Z), np.real(fz), colors='b', linestyles='--')
+cont2 = ax.contour(np.real(Z), np.imag(Z), np.imag(fz), colors='r', linestyles='-.')
+
+# Characteristic curves
+ax.plot(a, b, '--k', linewidth=0.5)
+ax.plot(c, d, '--k', linewidth=0.5)
+
+# Special points
+ax.scatter(np.real(omega / c_p), np.imag(omega / c_p), color='magenta')
+ax.scatter(np.real(omega / c_s), np.imag(omega / c_s), color='cyan')
+
+# Optional surface plot (magnitude)
+surf = ax.contourf(X, Y, np.abs(fz), levels=100, cmap='viridis')  # use contourf for 2D density
+# To use a full 3D surface (like MATLAB's `surf`), use plot_surface with Axes3D
+
+# Limits
+ax.set_ylim([imag_min, imag_max])
+ax.set_title('Contours of Re(f), Im(f), and |f(z)|')
+ax.set_xlabel('Re(z)')
+ax.set_ylabel('Im(z)')
+
+# Colorbar
+plt.colorbar(surf, ax=ax, label='|f(z)|')
+
+plt.tight_layout()
+plt.show()
+
+# %%% check for branch point
+
+branch_point = k_p
+theta = np.linspace(0, 2*np.pi, 100)
+loop = branch_point + 1e-3 * np.exp(1j * theta)
+values = f1(loop)
+plt.figure()
+plt.plot(np.real(loop), np.imag(values))
+plt.title("Looping around suspected branch point")
+
+
+# %%% root counting
+
+
+# initialise rootfinder
+rootfinder = ComplexRootFinder(f)
+
+# count roots in rectangular domain
+# rootfinder.count_roots_domains_rectangle(real_min, real_max, imag_min, imag_max)
+
+# cound and find roots and optimise with nelder mead
+rootfinder.find_roots_domains_rectangle(real_min, real_max, imag_min, imag_max)
