@@ -6,30 +6,54 @@ Created on Sat Oct  5 19:42:28 2024
 """
 
 # %% import packages
-
-
+from typing import Callable
 
 # %% functions
 
-def argument_principle(real_min, real_max, imag_min, imag_max, step_size, det_func):
+def argument_principle(
+    f: Callable[[complex], complex],
+    real_min: float, 
+    real_max: float, 
+    imag_min: float, 
+    imag_max: float, 
+    step_size: float
+) -> int:
     """
-    argument_principle: Finds the number of roots of a complex analytic function.
+    Find the number of roots of a complex analytic function using the argument principle.
 
-    Parameters:
-        real_min, real_max : float
-            Real axis boundaries.
-        imag_min, imag_max : float
-            Imaginary axis boundaries.
-        step_size : float
-            Initial step size for traversal along the boundary.
-        omega : float
-            Additional parameter for the determinant function.
-        det_func : function
-            Function to compute the determinant value for given complex input and omega.
+    The function traverses a rectangular boundary in the complex plane and counts the number
+    of times the function's argument changes, which corresponds to the number of roots inside
+    the boundary.
 
-    Returns:
-        n_roots : int
-            Number of singularities (roots) inside the given boundary.
+    Parameters
+    ----------
+    f : Callable[[complex], complex]
+        Complex analytic function to analyze.
+    real_min : float
+        Minimum real value of the boundary rectangle.
+    real_max : float
+        Maximum real value of the boundary rectangle.
+    imag_min : float
+        Minimum imaginary value of the boundary rectangle.
+    imag_max : float
+        Maximum imaginary value of the boundary rectangle.
+    step_size : float
+        Initial step size for traversal along the boundary.
+
+    Returns
+    -------
+    int
+        Number of roots inside the given boundary. Returns special values:
+        - 2001: Step limit reached on top boundary
+        - 2002: Step limit reached on right boundary
+        - 2003: Step limit reached on bottom boundary
+        - 2004: Step limit reached on left boundary
+
+    Notes
+    -----
+    The function uses the argument principle to count roots by tracking changes in the
+    function's argument as it traverses the boundary. The step size is automatically
+    reduced when necessary to ensure accurate counting.
     """
     # Constants and Limits
     step_limit = 1e-12  # Limit to prevent getting stuck in step reduction
@@ -49,8 +73,8 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, det_fu
         original_step = step
 
         # First Part: Horizontal Path from real_min to real_max (top boundary)
-        current_real_value = det_func(complex(real_min, imag_max)).real
-        current_imag_value = det_func(complex(real_min, imag_max)).imag
+        current_real_value = f(complex(real_min, imag_max)).real
+        current_imag_value = f(complex(real_min, imag_max)).imag
 
         real_pos = real_min
 
@@ -63,7 +87,7 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, det_fu
                 step = real_max - real_pos
                 next_wc = complex(real_max, imag_max)
 
-            next_value = det_func(next_wc)
+            next_value = f(next_wc)
             next_real_value = next_value.real
             next_imag_value = next_value.imag
 
@@ -81,8 +105,8 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, det_fu
                 real_pos = next_real_pos
 
         # Second Part: Vertical Path from imag_max to imag_min (right boundary)
-        current_real_value = det_func(complex(real_max, imag_max)).real
-        current_imag_value = det_func(complex(real_max, imag_max)).imag
+        current_real_value = f(complex(real_max, imag_max)).real
+        current_imag_value = f(complex(real_max, imag_max)).imag
 
         imag_pos = imag_max
 
@@ -95,7 +119,7 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, det_fu
                 step = imag_pos - imag_min
                 next_wc = complex(real_max, imag_min)
 
-            next_value = det_func(next_wc)
+            next_value = f(next_wc)
             next_real_value = next_value.real
             next_imag_value = next_value.imag
 
@@ -113,8 +137,8 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, det_fu
                 imag_pos = next_imag_pos
 
         # Third Part: Horizontal Path from real_max to real_min (bottom boundary)
-        current_real_value = det_func(complex(real_max, imag_min)).real
-        current_imag_value = det_func(complex(real_max, imag_min)).imag
+        current_real_value = f(complex(real_max, imag_min)).real
+        current_imag_value = f(complex(real_max, imag_min)).imag
 
         real_pos = real_max
 
@@ -127,7 +151,7 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, det_fu
                 step = real_pos - real_min
                 next_wc = complex(real_min, imag_min)
 
-            next_value = det_func(next_wc)
+            next_value = f(next_wc)
             next_real_value = next_value.real
             next_imag_value = next_value.imag
 
@@ -145,8 +169,8 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, det_fu
                 real_pos = next_real_pos
 
         # Fourth Part: Vertical Path from imag_min to imag_max (left boundary)
-        current_real_value = det_func(complex(real_min, imag_min)).real
-        current_imag_value = det_func(complex(real_min, imag_min)).imag
+        current_real_value = f(complex(real_min, imag_min)).real
+        current_imag_value = f(complex(real_min, imag_min)).imag
 
         imag_pos = imag_min
 
@@ -159,7 +183,7 @@ def argument_principle(real_min, real_max, imag_min, imag_max, step_size, det_fu
                 step = imag_max - imag_pos
                 next_wc = complex(real_min, imag_max)
 
-            next_value = det_func(next_wc)
+            next_value = f(next_wc)
             next_real_value = next_value.real
             next_imag_value = next_value.imag
 
