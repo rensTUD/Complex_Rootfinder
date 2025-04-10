@@ -23,7 +23,7 @@ rho_f = 1000
 c_f = 1500
 
 
-omega = 300*2*np.pi
+omega = 1000*2*np.pi
 H = 10
 H0 = H
 D0 = H
@@ -51,7 +51,8 @@ plt.title("Looping around suspected branch point")
 # --- Parameters ---
 dx = 5e-3
 real_min = -np.max(np.real(k_s)) / 0.5
-real_max = np.max(np.real(k_s)) / 0.5
+real_min = -1
+real_max = np.max(np.real(k_s)) / 0.8
 imag_min = -3
 imag_max = 50e-6  
 
@@ -89,8 +90,8 @@ d0 = (-del_ + np.real(k_s) * np.imag(k_s)) * (1 - 1e-10) / c
 fig, ax = plt.subplots(figsize=(10, 6))
 
 # Contours
-cont1 = ax.contour(np.real(Z), np.imag(Z), np.real(fz), colors='b', linestyles='--')
-cont2 = ax.contour(np.real(Z), np.imag(Z), np.imag(fz), colors='r', linestyles='-.')
+cont1 = ax.contour(np.real(Z), np.imag(Z), np.real(fz), levels=[0], colors='b', linestyles='--')
+cont2 = ax.contour(np.real(Z), np.imag(Z), np.imag(fz), levels=[0], colors='r', linestyles='-.')
 
 # Characteristic curves
 ax.plot(a, b, '--k', linewidth=0.5)
@@ -125,10 +126,14 @@ plt.show()
 # initialise rootfinder
 rootfinder = ComplexRootFinder(f)
 
-# count roots in rectangular domain
-# rootfinder.count_roots_domains_rectangle(real_min, real_max, imag_min, imag_max,debug=True)
+# create rectangular domain
+rectangle = RectangleContour(real_min, real_max, imag_min, imag_max)
 
-# cound and find roots and optimise with nelder mead
-all_roots = rootfinder.find_roots_domains_rectangle(real_min, real_max, imag_min, imag_max, debug=True)
+# count roots in chosen domain
+# rootfinder.count_root_containing_domains(rectangle)
+
+# find all roots in chosen domain
+all_roots = rootfinder.find_roots_domain(rectangle, max_roots_per_domain=3, max_depth=5, debug=True)
+
 
 print(f"{all_roots}")

@@ -193,10 +193,13 @@ plt.show()
 # initialise rootfinder
 rootfinder = ComplexRootFinder(f)
 
-# # count roots in rectangular domain
-# rootfinder.count_roots_domains_rectangle(real_min, real_max, imag_min, imag_max)
+# create rectangular domain
+rectangle = RectangleContour(real_min, real_max, imag_min, imag_max)
 
-# find roots in rectangular domain
-rootfinder.find_roots_domains_rectangle(real_min, real_max, imag_min, imag_max,debug=True)
+# count roots in chosen domain
+# rootfinder.count_root_containing_domains(rectangle)
 
+# find all roots in chosen domain
+all_roots = rootfinder.find_roots_domain(rectangle, max_roots_per_domain=3, max_depth=5, debug=True)
 
+print(f"{all_roots}")

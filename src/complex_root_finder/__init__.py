@@ -11,7 +11,8 @@ from .count_roots import count_roots_numerical, count_roots_unity
 from .find_roots import find_roots_austin_kravanja, find_roots_delves_lynes
 from .utils import finite_difference_first_derivative_4th_order
 from .contours import ContourBase, RectangleContour, CircleContour
-from .complex_root_finder import ComplexRootFinder, count_root_containing_domains
+from .complex_root_finder import ComplexRootFinder
+from .parametric_root_finder import ParametricRootFinder
 
 __all__ = [
     'argument_principle', 
@@ -23,6 +24,6 @@ __all__ = [
     'ContourBase',
     'RectangleContour',
     'CircleContour',
-    'ComplexRootFinder',
-    'count_root_containing_domains'
+    'count_root_containing_domains',
+    'ParametricRootFinder'
     ]
