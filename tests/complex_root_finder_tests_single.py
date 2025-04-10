@@ -23,7 +23,7 @@ rho_f = 1000
 c_f = 1500
 
 
-omega = 1000*2*np.pi
+omega = 100*2*np.pi
 H = 10
 H0 = H
 D0 = H
@@ -110,6 +110,8 @@ ax.set_ylim([imag_min, imag_max])
 ax.set_title('Contours of Re(f), Im(f), and |f(z)|')
 ax.set_xlabel('Re(z)')
 ax.set_ylabel('Im(z)')
+
+
 
 # Colorbar
 plt.colorbar(surf, ax=ax, label='|f(z)|')

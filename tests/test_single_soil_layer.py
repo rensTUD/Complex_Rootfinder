@@ -111,19 +111,23 @@ def f(k_r):
     M[:, 3, 2] = -i*gamma_T
     M[:, 3, 3] = i*gamma_T * exp_GT
 
-    # Now compute all determinants at once
-    dets = np.array([np.linalg.det(M[j]) for j in range(n)])
-    
-    # magnitudes = np.abs(dets)
-    # powers = np.floor(np.log10(magnitudes))
-    # dets = dets * np.exp(-powers)
+    # Stable determinant calculation using slogdet
+    signs = np.empty(n, dtype=complex)
+    logdets = np.empty(n, dtype=float)
 
-    return dets
+    for j in range(n):
+        sign, logdet = np.linalg.slogdet(M[j])
+        signs[j] = sign
+        logdets[j] = logdet
+
+    dets_stable = signs * np.exp(logdets)
+
+    return dets_stable
         
 # test
 
-k = 1+1j
-f(k)
+k_x = 1-5j
+f(k_x)
 
 
 # check for branch point
@@ -150,6 +154,7 @@ fz = np.vectorize(f)(Z)  # assuming f can be vectorized
 # --- Optional plotting curves ---
 del_ = 0
 a = np.arange(1e-6, np.real(k_p), 1e-5)
+a = np.arange(np.real(k_p), 2*np.real(k_p), 1e-5)
 b = np.real(k_p) * np.imag(k_p) / a
 b0 = (np.real(k_p) * np.imag(k_p)) * (1 + 1e-10) / a
 

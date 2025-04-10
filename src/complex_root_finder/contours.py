@@ -4,6 +4,7 @@
 
 import numpy as np
 from abc import ABC, abstractmethod
+from typing import List
 
 # %% CLASSES
 
@@ -248,4 +249,91 @@ class CircleContour(ContourBase):
             (self.center.real - self.radius, self.center.real + self.radius),
             (self.center.imag - self.radius, self.center.imag + self.radius)
         ]
+
+
+
+# %% BranchCut class
+
+class BranchCut:
+    def __init__(self, points: List[complex]):
+        """
+        Parameters
+        ----------
+        points : List[complex]
+            A piecewise linear representation of the branch cut in the complex plane.
+        """
+        if len(points) < 2:
+            raise ValueError("BranchCut requires at least two points.")
+        self.points = points
+        self._compute_bounds()
+
+    def _compute_bounds(self):
+        """Compute and store the bounding box of the branch cut."""
+        real_parts = [p.real for p in self.points]
+        imag_parts = [p.imag for p in self.points]
+        self._xmin = min(real_parts)
+        self._xmax = max(real_parts)
+        self._ymin = min(imag_parts)
+        self._ymax = max(imag_parts)
+
+    def _segments(self) -> List[tuple]:
+        """Return list of line segments (as point pairs) from the polyline."""
+        return [(self.points[i], self.points[i+1]) for i in range(len(self.points) - 1)]
+
+    def intersects(self, contour) -> bool:
+        """
+        Efficiently check if this branch cut intersects the provided contour.
+
+        Parameters
+        ----------
+        contour : Any object with a `.Z` attribute (List[complex])
+                  and a `.bounds` property -> [(xmin, xmax), (ymin, ymax)]
+
+        Returns
+        -------
+        bool
+            True if the branch cut intersects the contour.
+        """
+        (cxmin, cxmax), (cymin, cymax) = contour.bounds
+
+        # Quick bounding box rejection
+        if (
+            cxmax < self._xmin or cxmin > self._xmax or
+            cymax < self._ymin or cymin > self._ymax
+        ):
+            return False
+
+        # Proceed to segment intersection test
+        Z = np.asarray(contour.Z)
+        cut_segments = self._segments()
+        contour_segments = [(Z[i], Z[i+1]) for i in range(len(Z) - 1)]
+
+        for p1, p2 in cut_segments:
+            for q1, q2 in contour_segments:
+                if self._segments_intersect(p1, p2, q1, q2):
+                    return True
+
+        return False
+
+    @staticmethod
+    def _segments_intersect(a1: complex, a2: complex, b1: complex, b2: complex) -> bool:
+        """
+        Check if two line segments (a1–a2) and (b1–b2) intersect in 2D.
+
+        Parameters
+        ----------
+        a1, a2 : complex
+            Endpoints of the first segment.
+        b1, b2 : complex
+            Endpoints of the second segment.
+
+        Returns
+        -------
+        bool
+            True if the segments intersect.
+        """
+        def ccw(p, q, r):
+            return (r.imag - p.imag) * (q.real - p.real) > (q.imag - p.imag) * (r.real - p.real)
+
+        return (ccw(a1, b1, b2) != ccw(a2, b1, b2)) and (ccw(a1, a2, b1) != ccw(a1, a2, b2))
 
