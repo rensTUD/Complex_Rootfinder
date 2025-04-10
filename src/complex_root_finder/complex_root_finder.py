@@ -13,12 +13,14 @@ import matplotlib.pyplot as plt
 from collections import deque
 from scipy.optimize import minimize
 from scipy.spatial.distance import pdist, squareform
+from matplotlib.path import Path
 
 # imports from current library
 from .utils import finite_difference_first_derivative_4th_order
 from .contours import ContourBase, RectangleContour, CircleContour
 from .count_roots import count_roots_numerical, count_roots_unity
 from .find_roots import find_roots_delves_lynes, find_roots_austin_kravanja
+from .plot_utils import debug_plot_contours
 
 # %% CLASS DEFINITION
 
@@ -112,14 +114,15 @@ class ComplexRootFinder:
         real_min: float,
         real_max: float,
         imag_min: float,
-        imag_max: float
+        imag_max: float,
+        debug=False
     ):
         
         contour = RectangleContour(
             real_min, 
             real_max, 
             imag_min,
-            imag_max
+            imag_max,
             )
         
         domains_number_of_roots = count_root_containing_domains(
@@ -127,7 +130,7 @@ class ComplexRootFinder:
             self.df, 
             contour,
             count_roots_fn = count_roots_numerical,
-            debug=True)
+            debug=debug)
         
         return domains_number_of_roots
     
@@ -136,7 +139,8 @@ class ComplexRootFinder:
         real_min: float,
         real_max: float,
         imag_min: float,
-        imag_max: float
+        imag_max: float,
+        debug = False
     ):
         
         contour = RectangleContour(
@@ -151,18 +155,18 @@ class ComplexRootFinder:
             self.df, 
             contour,
             count_roots_fn = count_roots_numerical,
-            debug=True)
+            debug=debug)
         
         all_roots = find_all_roots_in_domains(
             self.f,
             self.df,
+            contour,
             domains_number_of_roots,
             find_roots_fn=find_roots_delves_lynes,
-            debug=True
+            debug=debug
         )
         
         return all_roots
-
 
 def count_root_containing_domains(
     f: Callable[[np.ndarray], np.ndarray],
@@ -170,7 +174,8 @@ def count_root_containing_domains(
     contour: ContourBase,
     count_roots_fn: Callable[..., float],
     n_divide: int = None,
-    max_roots_per_domain: int = 3,
+    max_roots_per_domain: int = 4,
+    max_depth: int = 5,
     debug: bool = False,
 ) -> List[Tuple[ContourBase, int]]:
     """
@@ -192,7 +197,8 @@ def count_root_containing_domains(
         Maximum number of roots allowed in a final subdomain (default is 3).
     n_divide : int, optional
         How many times to divide along each axis/direction (default is governed by the Contour).
-        For rectangles: creates n_divide^2 sub-rectangles.
+    max_depth : int, optional
+        Maximum number of recursive subdivisions allowed (default is 10).
     debug : bool, optional
         Whether to plot subdomains during recursion (default is False).
 
@@ -201,12 +207,16 @@ def count_root_containing_domains(
     List[Tuple[ContourBase, int]]
         List of (contour, estimated_root_count) pairs.
     """
-    # add original contour to deque (list that has a fast .pop() method)
-    queue = deque([contour])
+    queue = deque([(contour, 0)])  # Each entry is (contour, depth)
     final_domains: List[Tuple[ContourBase, int]] = []
 
     while queue:
-        current_contour = queue.popleft()
+        current_contour, depth = queue.popleft()
+
+        if depth >= max_depth:
+            if debug:
+                print(f"[Max Depth Reached] Skipping subdivision beyond depth {max_depth}")
+            continue
 
         try:
             n_roots = count_roots_fn(f, current_contour, df=df)
@@ -214,37 +224,39 @@ def count_root_containing_domains(
             print(f"[Warning] Failed to count roots in domain {current_contour}: {e}")
             continue
 
-        if np.iscomplex(n_roots):
-            # Handle branch cut effects heuristically
-            if np.imag(n_roots) != 0:
-                n_roots = np.real(n_roots) - 0.5 * np.imag(n_roots)
+        # Subdivide if branch cut is detected
+        if np.iscomplex(n_roots) and not np.isclose(np.imag(n_roots), 0):
+            children = current_contour.subdivide(n_divide=n_divide) if n_divide else current_contour.subdivide()
+            queue.extend((child, depth + 1) for child in children)
 
-        n_roots = float(np.real(n_roots))  # ensure it's a float
+            if debug:
+                print(f"[Branch Cut] Subdividing due to Im(n_roots) = {np.imag(n_roots):.3f}")
+                debug_plot_contours(children, color='orange')
+
+            continue
+
+        n_roots = float(np.real(n_roots))
 
         if np.abs(n_roots) < 1e-8:
             continue
 
         if n_roots <= max_roots_per_domain and not np.isclose(n_roots % 1, 0.5):
             final_domains.append((current_contour, int(round(n_roots))))
+            if debug:
+                print(f"{int(round(n_roots))} number of roots found!")
         else:
-            children = current_contour.subdivide()
-            queue.extend(children)
+            children = current_contour.subdivide(n_divide=n_divide) if n_divide else current_contour.subdivide()
+            queue.extend((child, depth + 1) for child in children)
 
             if debug:
-                try:
-                    import matplotlib.pyplot as plt
-                    for c in children:
-                        Z = c.Z
-                        plt.plot(np.real(Z), np.imag(Z), 'r-', alpha=0.5)
-                    plt.pause(0.01)
-                except ImportError:
-                    print("[Debug] matplotlib not available for plotting.")
+                debug_plot_contours(children, color='red')
 
     return final_domains
 
 def find_all_roots_in_domains(
     f: Callable[[np.ndarray], np.ndarray],
     df: Callable[[np.ndarray], np.ndarray],
+    original_contour: ContourBase,
     domains: List[Tuple[ContourBase, int]],
     find_roots_fn: Callable,
     polish: bool = True,
@@ -261,6 +273,8 @@ def find_all_roots_in_domains(
         Function whose roots to find.
     df : Callable
         Derivative of f.
+    original_contour : ContourBase
+        original contour that we are looking in
     domains : list of tuples (ContourBase, int)
         Each entry is a subdomain and the number of roots expected in it.
     find_roots_fn : Callable
@@ -281,6 +295,8 @@ def find_all_roots_in_domains(
         Array of all unique (polished) roots found.
     """
     all_roots = []
+    
+    
 
     for contour, n_roots in domains:
         if n_roots <= 0:
@@ -293,35 +309,56 @@ def find_all_roots_in_domains(
             continue
 
         roots = np.atleast_1d(roots)
+        accepted = []
 
         if polish:
-            polished = []
+            # Build path for domain check
+            Z_poly = np.column_stack((np.real(contour.Z), np.imag(contour.Z)))
+            path = Path(Z_poly)
             for z0 in roots:
+                if not path.contains_point((np.real(z0), np.imag(z0)), radius=-1e-5):
+                    z0 = contour.center
                 result = minimize(
-                    lambda z: np.abs(f(z[0] + 1j * z[1]))**2,
+                    lambda z: np.abs(f(z[0] + 1j * z[1])),
                     x0=[np.real(z0), np.imag(z0)],
-                    method="Nelder-Mead",
+                    method='L-BFGS-B',
+                    bounds = contour.bounds,
                     tol=polish_tol,
                     options={"disp": False}
                 )
-                z_star = result.x[0] + 1j * result.x[1]
-                polished.append(z_star)
-            roots = np.array(polished)
+                x, y = result.x
+                z_star = x + 1j * y
+                
+                if path.contains_point((x, y), radius=-1e-5):
+                    accepted.append(z_star)
+                else:
+                    if debug:
+                        print(f"[Polish Rejected] Root {z_star:.4f} outside domain — skipped.")
+        else:
+            accepted = roots
 
-        all_roots.extend(roots)
+        if debug and accepted:
+            plt.scatter(
+                np.real(accepted),
+                np.imag(accepted),
+                s=50,
+                c='green',
+                marker='x',
+                linewidths=1.5,
+                label='Polished roots'
+            )
 
-        if debug:
-            plt.scatter(np.real(roots), np.imag(roots), marker='x', color='black', s=50)
+        all_roots.extend(accepted)
 
     if debug:
-        plt.pause(0.01)  # allow figure to render interactively
+        plt.pause(0.01)
 
     if len(all_roots) == 0:
         return np.array([])
 
     all_roots = np.array(all_roots)
 
-    # Merge close roots (deduplication)
+    # Deduplicate roots using pairwise distance
     dist_matrix = squareform(pdist(all_roots[:, np.newaxis].view(np.float64).reshape(-1, 2)))
     keep = np.ones(len(all_roots), dtype=bool)
 
@@ -331,7 +368,6 @@ def find_all_roots_in_domains(
         keep[(dist_matrix[i] < merge_tol) & (np.arange(len(all_roots)) > i)] = False
 
     return all_roots[keep]
-
 
     
     

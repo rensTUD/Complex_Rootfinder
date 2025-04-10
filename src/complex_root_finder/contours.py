@@ -25,7 +25,7 @@ class RectangleContour(ContourBase):
         real_max: float,
         imag_min: float,
         imag_max: float,
-        n_points: int = 1000,
+        n_points: int = 10000,
     ):
         """
         Creates a rectangular contour object, which has functions to return it's Z values in the complex domain
@@ -49,7 +49,23 @@ class RectangleContour(ContourBase):
         self.imag_min = imag_min
         self.imag_max = imag_max
         self.n_points = int(n_points)
+        
+    def domain(self):
+        """
+        Prints the current domain
 
+        Returns
+        -------
+        None.
+
+        """
+        print(
+            f"real_min = {self.real_min}\n"
+            f"real_max = {self.real_max}\n"
+            f"imag_min = {self.imag_min}\n"
+            f"imag_max = {self.imag_max}\n"
+        )
+        
     @property
     def Z(self) -> np.ndarray:
         """
@@ -73,27 +89,55 @@ class RectangleContour(ContourBase):
 
     def subdivide(
         self, 
-        n_divide: int = 3
+        n_divide: int = 3,
+        overlap_percent: float = 0.3
     ) -> list:
         """
-        Subdivide rectangle into n_divide x n_divide smaller rectangles.
-
+        Subdivide rectangle into n_divide x n_divide overlapping rectangles.
+    
+        Parameters
+        ----------
+        n_divide : int
+            Number of divisions along each axis.
+        overlap_percent : float, optional
+            Fraction (e.g. 0.1 for 10%) to enlarge each subrectangle in all directions.
+    
         Returns
         -------
         list of RectangleContour instances
         """
         new_width = self.width / n_divide
         new_height = self.height / n_divide
-
+    
+        # How much each side is extended (in real and imag axes)
+        overlap_re = new_width * overlap_percent / 2
+        overlap_im = new_height * overlap_percent / 2
+    
         subdomains = []
         for i in range(n_divide):
             for j in range(n_divide):
+                # Start from unmodified bounds
                 re_min = self.real_min + i * new_width
                 re_max = re_min + new_width
                 im_min = self.imag_min + j * new_height
                 im_max = im_min + new_height
+    
+                # Expand each rectangle, but clip to the parent bounds
+                re_min = max(self.real_min, re_min - overlap_re)
+                re_max = min(self.real_max, re_max + overlap_re)
+                im_min = max(self.imag_min, im_min - overlap_im)
+                im_max = min(self.imag_max, im_max + overlap_im)
+    
                 subdomains.append(RectangleContour(re_min, re_max, im_min, im_max, self.n_points))
+        
         return subdomains
+    
+    @property
+    def bounds(self) -> list[tuple[float, float]]:
+        return [
+            (self.real_min, self.real_max),
+            (self.imag_min, self.imag_max)
+        ]
     
     @property
     def width(self) -> float:
@@ -113,9 +157,9 @@ class RectangleContour(ContourBase):
         float
             center
         """
-        real = self.width / 2
-        imag = self.height / 2
-        return real + 1j * imag
+        real_center = (self.real_min + self.real_max) / 2
+        imag_center = (self.imag_min + self.imag_max) / 2
+        return real_center + 1j * imag_center
     
     @property
     def radius(self) -> float:
@@ -152,6 +196,20 @@ class CircleContour(ContourBase):
         self.radius = radius
         self.n_points = int(n_points)
 
+    def domain(self):
+        """
+        Prints the current domain
+
+        Returns
+        -------
+        None.
+
+        """
+        print(
+            f"center = {self.center}\n"
+            f"radius = {self.radius}\n"
+        )
+
     @property
     def Z(self) -> np.ndarray:
         """
@@ -183,4 +241,11 @@ class CircleContour(ContourBase):
             subdomains.append(CircleContour(c, r0_n, self.n_points))
 
         return subdomains
+    
+    @property
+    def bounds(self) -> list[tuple[float, float]]:
+        return [
+            (self.center.real - self.radius, self.center.real + self.radius),
+            (self.center.imag - self.radius, self.center.imag + self.radius)
+        ]
 
