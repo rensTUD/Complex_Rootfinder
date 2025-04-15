@@ -10,7 +10,7 @@ from .argument_principle import argument_principle
 from .count_roots import count_roots_numerical, count_roots_unity
 from .find_roots import find_roots_austin_kravanja, find_roots_delves_lynes
 from .utils import finite_difference_first_derivative_4th_order
-from .contours import ContourBase, RectangleContour, CircleContour
+from .contours import ContourBase, RectangleContour, CircleContour, BranchCut
 from .complex_root_finder import ComplexRootFinder
 from .parametric_root_finder import ParametricRootFinder
 

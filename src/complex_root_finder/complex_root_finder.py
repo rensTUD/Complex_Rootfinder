@@ -16,8 +16,8 @@ from scipy.spatial.distance import pdist, squareform
 from matplotlib.path import Path
 
 # imports from current library
-from .utils import finite_difference_first_derivative_4th_order
-from .contours import ContourBase, RectangleContour, CircleContour
+from .utils import finite_difference_first_derivative_4th_order, partition_contour_along_cut_general, is_point_inside_contour, wrap_contour_around_branch_point, plot_contour
+from .contours import ContourBase, RectangleContour, CircleContour, BranchCut, CompositeContour
 from .count_roots import count_roots_numerical, count_roots_unity
 from .find_roots import find_roots_delves_lynes, find_roots_austin_kravanja
 from .plot_utils import debug_plot_contours
@@ -30,6 +30,7 @@ class ComplexRootFinder:
         self,
         f: Callable[[np.ndarray], np.ndarray],
         df: Callable[[np.ndarray], np.ndarray] | None = None,
+        branch_cuts: List[BranchCut] | None = None
     ):
         """
         Initialize a ComplexRootFinder instance.
@@ -48,6 +49,12 @@ class ComplexRootFinder:
             self.df = lambda z: finite_difference_first_derivative_4th_order(self.f, z)  # Use finite difference if no derivative provided
         else:
             self.df = df
+            
+        # assign branch cuts
+        if len(branch_cuts) > 1:
+            self.branch_cuts = branch_cuts
+        else:
+            self.branch_cuts = [branch_cuts]
                     
     def find_roots_domain(
         self,
@@ -162,6 +169,123 @@ class ComplexRootFinder:
     
                 if debug:
                     debug_plot_contours(children, color='red')
+    
+        return final_domains
+    
+    def count_root_containing_domains_branch_cut(
+        self,
+        contour,
+        count_roots_fn: Callable[..., float] | None = None,
+        n_divide: int = None,
+        max_roots_per_domain: int = 3,
+        max_depth: int = 5,
+        debug: bool = False,
+    ) -> List[Tuple["CompositeContour", int]]:
+        """
+        Recursively subdivide a contour until each subdomain contains
+        at most `max_roots_per_domain` roots, taking into account
+        branch cuts and branch points.
+    
+        Parameters
+        ----------
+        contour : ContourBase or CompositeContour
+            The initial contour (rectangular, circular, or custom).
+        count_roots_fn : Callable
+            Root-counting function to use. Must be provided.
+        n_divide : int
+            Number of divisions when subdividing.
+        max_roots_per_domain : int
+            Maximum roots allowed in a single domain.
+        max_depth : int
+            Maximum recursion depth.
+        debug : bool
+            Enable debug printing and plotting.
+    
+        Returns
+        -------
+        List[Tuple[CompositeContour, int]]
+            List of final (contour, root_count) pairs.
+        """
+        if count_roots_fn is None:
+            raise ValueError("A root-counting function must be provided.")
+    
+        queue = deque([(contour, 0)])
+        final_domains = []
+    
+        while queue:
+            current_contour, depth = queue.popleft()
+            Z = current_contour.Z 
+    
+            if depth >= max_depth:
+                if debug:
+                    print(f"[Max Depth Reached] Skipping subdivision beyond depth {max_depth}")
+                continue
+                    
+            # Check for branch cut intersections or branch points
+            split_due_to_cut = False
+            if self.branch_cuts:
+                for cut in self.branch_cuts:
+                    # check for:
+                    branch_cut_intersects = cut.intersects(current_contour)
+                    if cut.branch_point:
+                        branch_point_in_contour = is_point_inside_contour(Z, cut.branch_point)
+                    else:
+                        branch_point_in_contour = None
+                    if branch_cut_intersects and not branch_point_in_contour:
+                        if debug:
+                            print("[Branch Cut] Splitting domain along cut")
+                            plot_contour(Z, color='orange')
+                        subpaths = partition_contour_along_cut_general(Z, cut.points)
+                        for path in subpaths:
+                            queue.append((CompositeContour([path]), depth + 1))
+                        split_due_to_cut = True
+                        break
+                    elif branch_cut_intersects and branch_point_in_contour:
+                        if debug:
+                            print("[Branch Point] Wrapping around branch point")
+                            plot_contour(Z, color='blue')
+                        wrapped = wrap_contour_around_branch_point(current_contour, cut)
+                        queue.append((wrapped, depth + 1))
+                        split_due_to_cut = True
+                        break
+            if split_due_to_cut:
+                continue
+    
+            # Root counting
+            try:
+                n_roots = count_roots_fn(self.f, current_contour, df=self.df)
+            except Exception as e:
+                print(f"[Warning] Failed to count roots in domain {current_contour}: {e}")
+                continue
+            
+            # complex root count, meaning we are on a branch cut, or something else went wrong: subdivide
+            if np.iscomplex(n_roots) and not np.isclose(np.imag(n_roots), 0):
+                if debug:
+                    print("[Complex Root Count] Subdividing due to ambiguity")
+                    plot_contour(Z, color='gray')
+                children = current_contour.subdivide() if hasattr(current_contour, "subdivide") else []
+                queue.extend((child, depth + 1) for child in children)
+                continue
+            
+            # if 0 roots are found, continue
+            n_roots = float(np.real(n_roots))
+            if np.abs(n_roots) < 1e-8:
+                continue
+            
+            #
+            if n_roots <= max_roots_per_domain and not np.isclose(n_roots % 1, 0.5):
+                if not isinstance(current_contour, CompositeContour):
+                    current_contour = CompositeContour([Z])
+                final_domains.append((current_contour, int(round(n_roots))))
+                if debug:
+                    print(f"[Accepted] {int(round(n_roots))} root(s) in contour.")
+                    plot_contour(Z, color='green')
+            else:
+                if debug:
+                    print("[Subdivision] Too many or ambiguous roots")
+                    plot_contour(Z, color='red')
+                children = current_contour.subdivide() if hasattr(current_contour, "subdivide") else []
+                queue.extend((child, depth + 1) for child in children)
     
         return final_domains
     

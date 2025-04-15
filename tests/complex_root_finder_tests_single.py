@@ -8,7 +8,7 @@ Created on Mon Apr 9 20:02:28 2025
 # %% IMPORTS
 import numpy as np
 import matplotlib.pyplot as plt
-from complex_root_finder import ComplexRootFinder, RectangleContour, CircleContour
+from complex_root_finder import ComplexRootFinder, RectangleContour, CircleContour, BranchCut
 
 
 # %% TEST 1 - single soil layer?
@@ -77,11 +77,13 @@ fz = np.vectorize(f)(Z)  # assuming f can be vectorized
 
 # --- Optional plotting curves ---
 del_ = 0
-a = np.arange(1e-6, np.real(k_p), 1e-5)
+a = np.arange(1e-6, np.real(k_p), 1e-4)
+a = np.arange(np.real(k_p), 1.02*real_max, 1e-4)
 b = np.real(k_p) * np.imag(k_p) / a
 b0 = (np.real(k_p) * np.imag(k_p)) * (1 + 1e-10) / a
 
-c = np.arange(1e-6, np.real(k_s), 1e-5)
+c = np.arange(1e-6, np.real(k_s), 1e-4)
+c = np.arange(np.real(k_s), 1.02*real_max, 1e-4)
 d = np.real(k_s) * np.imag(k_s) / c
 d0 = (-del_ + np.real(k_s) * np.imag(k_s)) * (1 - 1e-10) / c
 
@@ -124,9 +126,13 @@ plt.show()
 
 # %%% root counting
 
+# define branch cuts
+branch_cut_kp = BranchCut(a+b*1j, k_p)
+branch_cut_ks = BranchCut(c+d*1j, k_s)
+branch_cuts = [branch_cut_kp, branch_cut_ks]
 
 # initialise rootfinder
-rootfinder = ComplexRootFinder(f)
+rootfinder = ComplexRootFinder(f, branch_cuts = branch_cuts)
 
 # create rectangular domain
 rectangle = RectangleContour(real_min, real_max, imag_min, imag_max)
@@ -134,8 +140,11 @@ rectangle = RectangleContour(real_min, real_max, imag_min, imag_max)
 # count roots in chosen domain
 # rootfinder.count_root_containing_domains(rectangle)
 
+
 # find all roots in chosen domain
-all_roots = rootfinder.find_roots_domain(rectangle, max_roots_per_domain=3, max_depth=5, debug=True)
+
+
+all_roots = rootfinder.find_roots_domain(rectangle, max_roots_per_domain=4, max_depth=5, debug=False)
 
 
 print(f"{all_roots}")
