@@ -23,13 +23,14 @@ rho_f = 1000
 c_f = 1500
 
 
-omega = 100*2*np.pi
+omega = 1000*2*np.pi
 H = 10
 H0 = H
 D0 = H
 k_p = omega/c_p
 k_s = omega/c_s
 k_f = omega/c_f
+Z_1 = H
 
 def f(k_x): 
     return 32 * ((((-(0.1e1 / 0.16e2) - np.exp(-2*1j * H * (np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 16 - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 16 - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 16) * mu + (-(0.1e1 / 0.32e2) - np.exp(-2*1j * H * (np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 32 - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 32 - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 32) * Lambda) * (omega ** 4) - (-(0.1e1 / 0.4e1) - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 4 - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 4 - np.exp(-2*1j * H * (np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 4 + np.exp(-1j * H * (np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2)))) * (mu * (c_p ** 2) + 2 * (c_s ** 2) * (mu + Lambda / 2)) * (k_x ** 2) * (omega ** 2) / 4 + (-(0.1e1 / 0.4e1) - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 4 - np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 4 - np.exp(-2*1j * H * (np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 4 + np.exp(-1j * H * (np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2)))) * (c_p ** 2) * (c_s ** 2) * mu * (k_x ** 4)) * np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + (np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) + np.exp(-2*1j * np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) - np.exp(-2*1j * H * (np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) - 1) * ((omega ** 4) * ((0.3e1 / 0.4e1) * mu + Lambda / 8) - (0.3e1 / 0.4e1) * (mu * (c_p ** 2) + (0.4e1 / 0.3e1) * (c_s ** 2) * (mu + Lambda / 4)) * (k_x ** 2) * (omega ** 2) + (c_p ** 2) * (c_s ** 2) * (k_x ** 4) * mu) * (k_x ** 2) / 4) * mu / (c_p ** 2) / (c_s ** 2)
@@ -37,6 +38,12 @@ def f(k_x):
 #     return 32 * ((((-(0.1e1 / 0.16e2) - np.exp(-2*1j * H * (-np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 16 - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 16 - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 16) * mu + (-(0.1e1 / 0.32e2) - np.exp(-2*1j * H * (-np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 32 - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 32 - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 32) * Lambda) * (omega ** 4) - (-(0.1e1 / 0.4e1) - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 4 - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 4 - np.exp(-2*1j * H * (-np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 4 + np.exp(-1j * H * (-np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2)))) * (mu * (c_p ** 2) + 2 * (c_s ** 2) * (mu + Lambda / 2)) * (k_x ** 2) * (omega ** 2) / 4 + (-(0.1e1 / 0.4e1) - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) / 4 - np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) / 4 - np.exp(-2*1j * H * (-np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) / 4 + np.exp(-1j * H * (-np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2)))) * (c_p ** 2) * (c_s ** 2) * mu * (k_x ** 4)) * -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * -np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + (np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) * H) + np.exp(-2*1j * -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2) * H) - np.exp(-2*1j * H * (-np.sqrt((-k_x ** 2 * c_p ** 2 + omega ** 2) / c_p ** 2) + -np.sqrt((-k_x ** 2 * c_s ** 2 + omega ** 2) / c_s ** 2))) - 1) * ((omega ** 4) * ((0.3e1 / 0.4e1) * mu + Lambda / 8) - (0.3e1 / 0.4e1) * (mu * (c_p ** 2) + (0.4e1 / 0.3e1) * (c_s ** 2) * (mu + Lambda / 4)) * (k_x ** 2) * (omega ** 2) + (c_p ** 2) * (c_s ** 2) * (k_x ** 4) * mu) * (k_x ** 2) / 4) * mu / (c_p ** 2) / (c_s ** 2)
 # def f(k_x): 
 #     return f1(k_x)*f2(k_x)
+def f(k_r):
+    k_zT = np.sqrt((k_s)**2 - k_r**2)
+    k_zL = np.sqrt((k_p)**2 - k_r**2)
+    cg = Lambda
+    return complex(0, -2) * mu * (((k_zT + k_r) * (mu + cg / 2) * (k_r - k_zT) * k_zL ** 2 - 2 * k_r ** 2 * k_zL * k_zT * mu + k_r ** 4 * cg / 2 - k_r ** 2 * k_zT ** 2 * cg / 2) * (k_r ** 2 + k_zT * k_zL) * np.exp(complex(0, 2) * Z_1 * (k_zL + k_zT)) + 4 * k_r ** 2 * k_zL * ((-2 * mu - cg) * k_zL ** 2 + (mu - cg) * k_r ** 2 - k_zT ** 2 * mu) * k_zT * np.exp(complex(0, 1) * Z_1 * (k_zL + k_zT)) - ((k_zT + k_r) * (mu + cg / 2) * (k_r - k_zT) * k_zL ** 2 + 2 * k_r ** 2 * k_zL * k_zT * mu + k_r ** 4 * cg / 2 - k_r ** 2 * k_zT ** 2 * cg / 2) * (k_r ** 2 - k_zT * k_zL) * np.exp(complex(0, 2) * k_zL * Z_1) - ((k_zT + k_r) * (mu + cg / 2) * (k_r - k_zT) * k_zL ** 2 + 2 * k_r ** 2 * k_zL * k_zT * mu + k_r ** 4 * cg / 2 - k_r ** 2 * k_zT ** 2 * cg / 2) * (k_r ** 2 - k_zT * k_zL) * np.exp(complex(0, 2) * k_zT * Z_1) + ((k_zT + k_r) * (mu + cg / 2) * (k_r - k_zT) * k_zL ** 2 - 2 * k_r ** 2 * k_zL * k_zT * mu + k_r ** 4 * cg / 2 - k_r ** 2 * k_zT ** 2 * cg / 2) * (k_r ** 2 + k_zT * k_zL))
+
 
 
 # check for branch point
@@ -56,11 +63,12 @@ real_max = np.max(np.real(k_s)) / 0.8
 imag_min = -3
 imag_max = 50e-6  
 
-# dx = 1e-3
-# real_min = 4
-# real_max = 5.5
-# imag_min = -0.35
-# imag_max = -0.20 
+real_min = -np.max(np.real(k_s)) / 0.5
+real_min = -1
+real_max = np.max(np.real(k_s)) / 0.8
+imag_min = -3
+imag_max = -5e-2 
+ 
 
 
 
@@ -104,8 +112,8 @@ ax.scatter(np.real(omega / c_p), np.imag(omega / c_p), color='magenta')
 ax.scatter(np.real(omega / c_s), np.imag(omega / c_s), color='cyan')
 
 # Optional surface plot (magnitude)
-surf = ax.contourf(X, Y, np.abs(fz), levels=100, cmap='viridis')  # use contourf for 2D density
-# To use a full 3D surface (like MATLAB's `surf`), use plot_surface with Axes3D
+# surf = ax.contourf(X, Y, np.abs(fz), levels=100, cmap='viridis')  # use contourf for 2D density
+
 
 # Limits
 ax.set_ylim([imag_min, imag_max])
@@ -116,7 +124,7 @@ ax.set_ylabel('Im(z)')
 
 
 # Colorbar
-plt.colorbar(surf, ax=ax, label='|f(z)|')
+# plt.colorbar(surf, ax=ax, label='|f(z)|')
 
 plt.tight_layout()
 plt.show()
@@ -142,9 +150,11 @@ rectangle = RectangleContour(real_min, real_max, imag_min, imag_max)
 
 
 # find all roots in chosen domain
+# all_roots = rootfinder.find_roots_domain(rectangle, max_roots_per_domain=4, max_depth=5, debug=True)
 
+# test version of above
+all_roots = rootfinder.find_roots_domain_test(rectangle, max_roots_per_domain=1, max_depth=15, debug=True)
 
-all_roots = rootfinder.find_roots_domain(rectangle, max_roots_per_domain=4, max_depth=5, debug=False)
 
 
 print(f"{all_roots}")

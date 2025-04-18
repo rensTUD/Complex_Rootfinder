@@ -5,8 +5,7 @@
 import numpy as np
 from abc import ABC, abstractmethod
 from typing import List, Union
-from shapely.geometry import Polygon, box as shapely_box
-from shapely.geometry import LineString
+from shapely.geometry import Polygon, box as shapely_box, Point, LineString, Polygon
 from shapely.geometry.polygon import orient
 
 # %% CLASSES
@@ -53,6 +52,7 @@ class RectangleContour(ContourBase):
         self.real_max = real_max
         self.imag_min = imag_min
         self.imag_max = imag_max
+        self.boundary = shapely_box(real_min, imag_min, real_max, imag_max)
         self.n_points = int(n_points)
         self.dz = dz
         
@@ -203,6 +203,7 @@ class CircleContour(ContourBase):
         """
         self.center = center
         self.radius = radius
+        self.boundary = Point(self.center.real, self.center.imag).buffer(self.radius, resolution=self.n_points)
         self.n_points = int(n_points)
         self.dz = dz
 
@@ -265,7 +266,8 @@ class CompositeContour:
         self, 
         segments: List[np.ndarray],
         n_points: int = 1000,
-        dz: int = 1e-3
+        dz: int = 1e-3,
+        boundary: Polygon = None
     ):
         """
         Represents a composite contour made of multiple segments.
@@ -280,11 +282,19 @@ class CompositeContour:
         if not segments or not all(isinstance(seg, np.ndarray) and len(seg) >= 2 for seg in segments):
             raise ValueError("Each segment must be a numpy array with at least two points.")
             
+        
         self.segments = segments
-        self.n_points = n_points
-        self.dz = dz
         self.Z = self._build_Z()
         self._compute_bounds()
+        if boundary:
+            self.boundary = boundary
+        else:
+            self.boundary = Polygon([(z.real, z.imag) for z in self.Z])
+            if not self.boundary.is_valid:
+                self.boundary = self.boundary.buffer(0)
+        
+        self.n_points = n_points
+        self.dz = dz
 
     def _build_Z(self) -> np.ndarray:
         """
@@ -318,37 +328,79 @@ class CompositeContour:
             Bounding box as [(xmin, xmax), (ymin, ymax)]
         """
         return [(self._xmin, self._xmax), (self._ymin, self._ymax)]
+    
+    @property
+    def center(self) -> complex:
+        """
+        Returns the center of the bounding box of the contour.
+    
+        Returns
+        -------
+        complex
+            Center of the contour.
+        """
+        x_center = (self._xmin + self._xmax) / 2
+        y_center = (self._ymin + self._ymax) / 2
+        return complex(x_center, y_center)
+
+    @property
+    def radius(self) -> float:
+        """
+        Returns the radius of the smallest circle that contains the bounding box.
+    
+        Returns
+        -------
+        float
+            Radius of the contour's bounding circle.
+        """
+        width = self._xmax - self._xmin
+        height = self._ymax - self._ymin
+        return 0.5 * np.sqrt(width**2 + height**2)
+
 
     def __repr__(self):
         return f"CompositeContour(n_segments={len(self.segments)}, n_points={len(self.Z)})"
-    
-    def subdivide(self, n_divide: int = 3) -> List[Union["CompositeContour", "RectangleContour"]]:
+
+    def subdivide(self, n_divide: int = 3, overlap_percent: float = 0.3) -> List["CompositeContour"]:
         """
-        Subdivide the composite contour using geometry-aware polygon clipping.
+        Subdivide the composite contour using geometry-aware polygon clipping,
+        and resample each resulting polygon's boundary using adaptive spacing.
     
         Parameters
         ----------
         n_divide : int
             Number of subdivisions along each axis.
+        overlap_percent : float
+            Fraction (e.g. 0.1 for 10%) to enlarge each subrectangle in all directions.
     
         Returns
         -------
-        List[CompositeContour or RectangleContour]
-            Subdomains clipped from the original region.
+        List[CompositeContour]
+            Subdomains as uniformly-sampled CompositeContours.
         """
-        poly = Polygon([(z.real, z.imag) for z in self.Z])
-        if not poly.is_valid:
-            poly = poly.buffer(0)
+        dz = self.dz
+    
+        if not self.boundary.is_valid:
+            poly = self.boundary.buffer(0)
+        else:
+            poly = self.boundary
     
         subdomains = []
         (xmin, xmax), (ymin, ymax) = self.bounds
+    
         x_vals = np.linspace(xmin, xmax, n_divide + 1)
         y_vals = np.linspace(ymin, ymax, n_divide + 1)
+        new_width = (xmax - xmin) / n_divide
+        new_height = (ymax - ymin) / n_divide
+        overlap_x = new_width * overlap_percent / 2
+        overlap_y = new_height * overlap_percent / 2
     
         for i in range(n_divide):
             for j in range(n_divide):
-                x0, x1 = x_vals[i], x_vals[i + 1]
-                y0, y1 = y_vals[j], y_vals[j + 1]
+                x0 = max(xmin, x_vals[i] - overlap_x)
+                x1 = min(xmax, x_vals[i + 1] + overlap_x)
+                y0 = max(ymin, y_vals[j] - overlap_y)
+                y1 = min(ymax, y_vals[j + 1] + overlap_y)
                 rect = shapely_box(x0, y0, x1, y1)
     
                 try:
@@ -365,135 +417,128 @@ class CompositeContour:
                 )
     
                 for part in parts:
-                    # Try to simplify to RectangleContour if the entire cell is covered
-                    if rect.covers(part) and part.area >= 0.999 * rect.area:
-                        rect_contour = RectangleContour(
-                            real_min = x0,
-                            real_max = x1,
-                            imag_min = y0,
-                            imag_max = y1
-                        )
-                        subdomains.append(rect_contour)
-                    else:
-                        completed = complete_loop_with_rectangle_edges(part, rect)
-                        subdomains.append(CompositeContour([completed]))
+                    part = orient(part, sign=1.0)
+                    resampled_Z = self.adaptive_resample_polygon_boundary(part, dz=dz)
+                    subdomains.append(CompositeContour([resampled_Z], boundary=part))
     
         return subdomains
 
-    
     # def subdivide(self, n_divide: int = 3) -> List["CompositeContour"]:
-    #     """
-    #     Subdivide the composite contour using geometry-aware polygon clipping.
+    #         """
+    #         Subdivide the composite contour using geometry-aware polygon clipping
+    #         and resample each resulting polygon's boundary using uniform spacing.
     
-    #     Parameters
-    #     ----------
-    #     n_divide : int
-    #         Number of subdivisions along each axis.
+    #         Parameters
+    #         ----------
+    #         n_divide : int
+    #             Number of subdivisions along each axis.
+    #         dz : float
+    #             Desired spacing for resampling subdomain boundaries.
     
-    #     Returns
-    #     -------
-    #     List[CompositeContour]
-    #         Subdomains clipped from the original region.
-    #     """
-    #     from shapely.geometry import Polygon, box as shapely_box
+    #         Returns
+    #         -------
+    #         List[CompositeContour]
+    #             Subdomains as uniformly-sampled CompositeContours.
+    #         """
+    #         dz = self.dz        
     
-    #     poly = Polygon([(z.real, z.imag) for z in self.Z])
-    #     if not poly.is_valid:
-    #         poly = poly.buffer(0)  # fix invalid shapes if needed
+    #         poly = Polygon([(z.real, z.imag) for z in self.Z])
+    #         if not poly.is_valid:
+    #             poly = poly.buffer(0)
     
-    #     subdomains = []
-    #     (xmin, xmax), (ymin, ymax) = self.bounds
-    #     x_vals = np.linspace(xmin, xmax, n_divide + 1)
-    #     y_vals = np.linspace(ymin, ymax, n_divide + 1)
+    #         subdomains = []
+    #         (xmin, xmax), (ymin, ymax) = self.bounds
+    #         x_vals = np.linspace(xmin, xmax, n_divide + 1)
+    #         y_vals = np.linspace(ymin, ymax, n_divide + 1)
     
-    #     for i in range(n_divide):
-    #         for j in range(n_divide):
-    #             x0, x1 = x_vals[i], x_vals[i + 1]
-    #             y0, y1 = y_vals[j], y_vals[j + 1]
-    #             rect = shapely_box(x0, y0, x1, y1)
+    #         for i in range(n_divide):
+    #             for j in range(n_divide):
+    #                 x0, x1 = x_vals[i], x_vals[i + 1]
+    #                 y0, y1 = y_vals[j], y_vals[j + 1]
+    #                 rect = shapely_box(x0, y0, x1, y1)
     
-    #             try:
-    #                 inter = poly.intersection(rect)
-    #             except Exception as e:
-    #                 print(f"[Warning] Skipping cell ({i},{j}): intersection failed: {e}")
-    #                 continue
+    #                 try:
+    #                     inter = poly.intersection(rect)
+    #                 except Exception as e:
+    #                     print(f"[Warning] Skipping cell ({i},{j}): intersection failed: {e}")
+    #                     continue
     
-    #             if inter.is_empty:
-    #                 continue
+    #                 if inter.is_empty:
+    #                     continue
     
-    #             parts = [inter] if inter.geom_type == "Polygon" else (
-    #                 list(inter.geoms) if inter.geom_type == "MultiPolygon" else []
-    #             )
+    #                 parts = [inter] if inter.geom_type == "Polygon" else (
+    #                     list(inter.geoms) if inter.geom_type == "MultiPolygon" else []
+    #                 )
     
-    #             for part in parts:
-    #                 if part.equals_exact(rect, tolerance=1e-8):
-    #                     # Fast path for rectangular subdomain
-    #                     sub = RectangleContour(
-    #                         real_min = x0,
-    #                         real_max = x1,
-    #                         imag_min = y0,
-    #                         imag_max = y1
-    #                     )
-    #                     subdomains.append(sub)
-    #                 else:
-    #                     coords = list(part.exterior.coords)
-    #                     segment = np.array([complex(x, y) for x, y in coords])
-    #                     subdomains.append(CompositeContour([segment]))
+    #                 for part in parts:
+    #                     part = orient(part, sign=1.0)
+    #                     # resampled_Z = self.resample_polygon_boundary(part, dz=dz)
+    #                     resampled_Z = self.adaptive_resample_polygon_boundary(part, dz=dz)
+    #                     subdomains.append(CompositeContour([resampled_Z], boundary=part))
     
-    #     return subdomains
+    #         return subdomains
 
+    def resample_polygon_boundary(self, polygon, dz: float) -> np.ndarray:
+        """
+        Uniformly sample a counter-clockwise boundary along the polygon exterior.
+    
+        Parameters
+        ----------
+        polygon : shapely.geometry.Polygon
+            The polygon to resample.
+        dz : float
+            Desired step size.
+    
+        Returns
+        -------
+        np.ndarray
+            Complex-valued, uniformly spaced counter-clockwise loop.
+        """
+        polygon = orient(polygon, sign=1.0)
+        line = LineString(polygon.exterior.coords)
+        length = line.length
+        n_points = max(int(np.ceil(length / dz)), 3)
+        distances = np.linspace(0, length, n_points)
+        points = [line.interpolate(d) for d in distances]
+        return np.array([complex(p.x, p.y) for p in points])
 
-def complete_loop_with_rectangle_edges(intersection, rect, tol=1e-8) -> np.ndarray:
-    """
-    Ensures that the intersection polygon includes all necessary rectangle boundary segments
-    to form a complete, counterclockwise loop for integration.
+    def adaptive_resample_polygon_boundary(self, polygon, dz: float) -> np.ndarray:
+        """
+        Reuse original boundary points when spacing is fine enough.
+        Interpolate intermediate points where gaps exceed `dz`.
+    
+        Parameters
+        ----------
+        polygon : shapely.geometry.Polygon
+            The polygon to resample adaptively.
+        dz : float
+            Desired maximum spacing between consecutive boundary points.
+    
+        Returns
+        -------
+        np.ndarray
+            Complex-valued array of boundary points with adaptive resolution.
+        """
+        polygon = orient(polygon, sign=1.0)
+        coords = list(polygon.exterior.coords)
+        result = []
+    
+        for i in range(len(coords) - 1):
+            p0 = coords[i]
+            p1 = coords[i + 1]
+            z0 = complex(*p0)
+            z1 = complex(*p1)
+    
+            segment_length = abs(z1 - z0)
+            n_segment = max(int(np.ceil(segment_length / dz)), 1)
+    
+            segment = np.linspace(z0, z1, n_segment + 1)[:-1]
+            result.extend(segment)
+    
+        result.append(complex(*coords[-1]))  # close the loop
+    
+        return np.array(result)
 
-    Parameters
-    ----------
-    intersection : shapely.geometry.Polygon
-        The intersected region between the original domain and the rectangle.
-    rect : shapely.geometry.Polygon
-        The rectangle cell being intersected.
-    tol : float
-        Numerical tolerance for matching segments.
-
-    Returns
-    -------
-    np.ndarray
-        A complex-valued path representing the completed, counterclockwise loop.
-    """
-    intersection = orient(intersection, sign=1.0)
-    coords = list(intersection.exterior.coords)
-    result_path = [complex(x, y) for x, y in coords]
-
-    rect_coords = list(rect.exterior.coords)
-    rect_edges = [
-        LineString([rect_coords[i], rect_coords[i + 1]])
-        for i in range(len(rect_coords) - 1)
-    ]
-
-    used_edges = []
-    intersection_line = LineString(coords)
-
-    for edge in rect_edges:
-        if intersection_line.distance(edge) < tol:
-            used_edges.append(edge)
-
-    missing_edges = [e for e in rect_edges if e not in used_edges]
-
-    for edge in missing_edges:
-        ex, ey = edge.xy
-        edge_pts = [complex(ex[i], ey[i]) for i in range(len(ex))]
-        if not np.isclose(result_path[-1], edge_pts[0], atol=tol):
-            result_path.append(edge_pts[0])
-        result_path.append(edge_pts[1])
-
-    if not np.isclose(result_path[0], result_path[-1], atol=tol):
-        result_path.append(result_path[0])
-
-    ccw_poly = orient(Polygon([(z.real, z.imag) for z in result_path]), sign=1.0)
-    ccw_coords = np.array([complex(x, y) for x, y in ccw_poly.exterior.coords])
-    return ccw_coords
 
 # %% BranchCut class
 
@@ -543,9 +588,13 @@ class BranchCut:
             cymax < self._ymin or cymin > self._ymax
         ):
             return False
-
-        contour_line = LineString([(z.real, z.imag) for z in contour.Z])
-        return self._line.intersects(contour_line)
+        
+        # create boundary
+        # contour_line = LineString([(z.real, z.imag) for z in contour.Z])
+        # return self._line.intersects(contour_line)
+        
+        # use boundary of contour
+        return self._line.intersects(contour.boundary)
 
     def __repr__(self):
         return f"BranchCut(n_points={len(self.points)}, branch_point={self.branch_point})"

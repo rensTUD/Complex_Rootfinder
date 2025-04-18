@@ -164,6 +164,7 @@ def wrap_contour_around_branch_point(contour, cut, epsilon=1e-4) -> "CompositeCo
         raise ValueError("wrap_contour_around_branch_point requires a branch point.")
 
     Z: np.ndarray = contour.Z
+    dz = contour.dz
     insertions = find_intersections(Z, cut.points)
 
     if len(insertions) != 1:
@@ -178,12 +179,12 @@ def wrap_contour_around_branch_point(contour, cut, epsilon=1e-4) -> "CompositeCo
     # Build offset paths in correct direction
     first_segment = build_offset_segment_along_cut(
         np.array(cut.points), pt_start=before[-1], pt_end=cut.branch_point,
-        epsilon=epsilon, side="first"
+        epsilon=epsilon, side="first", dz=dz
     )
 
     second_segment = build_offset_segment_along_cut(
         np.array(cut.points), pt_start=cut.branch_point, pt_end=after[0],
-        epsilon=epsilon, side="second"
+        epsilon=epsilon, side="second", dz=dz
     )
 
     # Create arc bridging the two segments around the branch point
@@ -319,7 +320,8 @@ def build_offset_segment_along_cut(
     pt_start: complex,
     pt_end: complex,
     epsilon: float,
-    side: str  # "first" or "second"
+    side: str,  # "first" or "second"
+    dz: float
 ) -> np.ndarray:
     """
     Build an offset segment along a cut path, from pt_start to pt_end, and offset
@@ -348,7 +350,10 @@ def build_offset_segment_along_cut(
     end_dist = cut_line.project(Point(pt_end.real, pt_end.imag))
 
     # Ensure we move from pt_start to pt_end along the cut
-    sample_distances = np.linspace(start_dist, end_dist, 100)
+    arc_length = abs(end_dist - start_dist)
+    n_points = max(int(np.ceil(arc_length / dz)), 3)
+    sample_distances = np.linspace(start_dist, end_dist, n_points)
+    # sample_distances = np.linspace(start_dist, end_dist, 100)
 
     segment = [cut_line.interpolate(d) for d in sample_distances]
     segment_coords = np.array([[p.x, p.y] for p in segment])

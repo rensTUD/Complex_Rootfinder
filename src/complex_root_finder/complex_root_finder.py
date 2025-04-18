@@ -89,7 +89,40 @@ class ComplexRootFinder:
         )
         
         return all_roots
+
+    def find_roots_domain_test(
+        self,
+        contour: ContourBase,
+        n_divide: int = None,
+        max_roots_per_domain: int = 3,
+        max_depth: int = 5,
+        polish: bool = True,
+        polish_tol: float = 1e-10,
+        merge_tol: float = 1e-8,
+        debug: bool = False,
+    ):
         
+        # count roots
+        domains_number_of_roots = self.count_root_containing_domains_branch_cut(
+            contour=contour,
+            count_roots_fn = count_roots_numerical,
+            n_divide = n_divide,
+            max_roots_per_domain = max_roots_per_domain,
+            max_depth = max_depth,
+            debug=False)
+        
+        # find roots
+        all_roots = self.find_all_roots_in_domains(
+            original_contour = contour,
+            domains = domains_number_of_roots,
+            find_roots_fn = find_roots_delves_lynes,
+            polish = polish,
+            polish_tol = polish_tol,
+            merge_tol = merge_tol,
+            debug = debug,
+        )
+        
+        return all_roots
 
     def count_root_containing_domains(
         self,
@@ -213,6 +246,7 @@ class ComplexRootFinder:
         final_domains = []
     
         while queue:
+            print(f"Length of queue: {len(queue)}")
             current_contour, depth = queue.popleft()
             Z = current_contour.Z 
     
@@ -350,7 +384,7 @@ class ComplexRootFinder:
                     result = minimize(
                         lambda z: np.abs(self.f(z[0] + 1j * z[1])),
                         x0=[np.real(z0), np.imag(z0)],
-                        method='L-BFGS-B',
+                        method='Nelder-Mead', # Nelder-Mead, L-BFGS-B
                         bounds = contour.bounds,
                         tol=polish_tol,
                         options={"disp": False}
