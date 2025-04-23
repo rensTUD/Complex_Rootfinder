@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "complex_root_finder"
-version = "0.1.0"
+version = "0.2.0"
 authors = [
     { name = "Rens van Leijden", email = "rensvleijden@outlook.com" },
 ]
@@ -12,7 +12,12 @@ description = "A package for finding complex roots using the argument principle"
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
-    "numpy",
+	"joblib"==1.4.2,
+	"matplotlib"==3.10.1,
+	"numpy"==2.2.5,
+	"scipy"==1.15.2,
+	"Shapely"==2.1.0,
+	"tqdm"==4.67.1,
 ]
 
 [project.optional-dependencies]
