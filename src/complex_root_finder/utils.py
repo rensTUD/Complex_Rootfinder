@@ -114,34 +114,6 @@ def is_point_inside_contour(Z: np.ndarray, point: complex) -> bool:
     path = Path([(z.real, z.imag) for z in Z])
     return path.contains_point((point.real, point.imag))
 
-# def wrap_contour_around_branch_point(contour, cut, epsilon=1e-4) -> "CompositeContour":
-#     """
-#     Create a composite contour that wraps around a branch point and its associated cut.
-
-#     Parameters
-#     ----------
-#     contour : ContourBase or CompositeContour
-#         The original enclosing domain.
-#     cut : BranchCut
-#         A BranchCut object that includes a defined branch point.
-#     epsilon : float
-#         Offset distance from the cut to avoid evaluating on the discontinuity.
-
-#     Returns
-#     -------
-#     CompositeContour
-#         A new composite contour that encircles the cut and the branch point.
-#     """
-#     if not cut.branch_point:
-#         raise ValueError("wrap_contour_around_branch_point requires a branch point.")
-
-#     boundary = contour.Z
-#     left_offset = offset_branchcut(cut.points, epsilon, direction='left')
-#     right_offset = offset_branchcut(cut.points, epsilon, direction='right')
-
-#     segments = [boundary, left_offset[::-1], right_offset]
-#     return CompositeContour(segments)
-
 def wrap_contour_around_branch_point(contour, cut, epsilon=1e-4) -> "CompositeContour":
     """
     Insert an offset loop around the branch cut and branch point, direction-aware.

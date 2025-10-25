@@ -24,7 +24,7 @@ c_f = 1500
 
 
 omega = 1000*2*np.pi
-H = 10
+H = 20
 H0 = H
 D0 = H
 k_p = omega/c_p
@@ -42,7 +42,7 @@ def f(k_r):
     k_zT = np.sqrt((k_s)**2 - k_r**2)
     k_zL = np.sqrt((k_p)**2 - k_r**2)
     cg = Lambda
-    return complex(0, -2) * mu * (((k_zT + k_r) * (mu + cg / 2) * (k_r - k_zT) * k_zL ** 2 - 2 * k_r ** 2 * k_zL * k_zT * mu + k_r ** 4 * cg / 2 - k_r ** 2 * k_zT ** 2 * cg / 2) * (k_r ** 2 + k_zT * k_zL) * np.exp(complex(0, 2) * Z_1 * (k_zL + k_zT)) + 4 * k_r ** 2 * k_zL * ((-2 * mu - cg) * k_zL ** 2 + (mu - cg) * k_r ** 2 - k_zT ** 2 * mu) * k_zT * np.exp(complex(0, 1) * Z_1 * (k_zL + k_zT)) - ((k_zT + k_r) * (mu + cg / 2) * (k_r - k_zT) * k_zL ** 2 + 2 * k_r ** 2 * k_zL * k_zT * mu + k_r ** 4 * cg / 2 - k_r ** 2 * k_zT ** 2 * cg / 2) * (k_r ** 2 - k_zT * k_zL) * np.exp(complex(0, 2) * k_zL * Z_1) - ((k_zT + k_r) * (mu + cg / 2) * (k_r - k_zT) * k_zL ** 2 + 2 * k_r ** 2 * k_zL * k_zT * mu + k_r ** 4 * cg / 2 - k_r ** 2 * k_zT ** 2 * cg / 2) * (k_r ** 2 - k_zT * k_zL) * np.exp(complex(0, 2) * k_zT * Z_1) + ((k_zT + k_r) * (mu + cg / 2) * (k_r - k_zT) * k_zL ** 2 - 2 * k_r ** 2 * k_zL * k_zT * mu + k_r ** 4 * cg / 2 - k_r ** 2 * k_zT ** 2 * cg / 2) * (k_r ** 2 + k_zT * k_zL))
+    return complex(0, -2) * mu * (((k_zT + k_r) * (mu + cg / 2) * (k_r - k_zT) * k_zL ** 2 - 2 * k_r ** 2 * k_zL * k_zT * mu + k_r ** 4 * cg / 2 - k_r ** 2 * k_zT ** 2 * cg / 2) * (k_r ** 2 + k_zT * k_zL) * np.exp(complex(0, 2) * Z_1 * (k_zL + k_zT)) + 4 * k_r ** 2 * k_zL * ((-2 * mu - cg) * k_zL ** 2 + (mu - cg) * k_r ** 2 - k_zT ** 2 * mu) * k_zT * np.exp(complex(0, 1) * Z_1 * (k_zL + k_zT)) - ((k_zT + k_r) * (mu + cg / 2) * (k_r - k_zT) * k_zL ** 2 + 2 * k_r ** 2 * k_zL * k_zT * mu + k_r ** 4 * cg / 2 - k_r ** 2 * k_zT ** 2 * cg / 2) * (k_r ** 2 - k_zT * k_zL) * np.exp(complex(0, 2) * k_zL * Z_1) - ((k_zT + k_r) * (mu + cg / 2) * (k_r - k_zT) * k_zL ** 2 + 2 * k_r ** 2 * k_zL * k_zT * mu + k_r ** 4 * cg / 2 - k_r ** 2 * k_zT ** 2 * cg / 2) * (k_r ** 2 - k_zT * k_zL) * np.exp(complex(0, 2) * k_zT * Z_1) + ((k_zT + k_r) * (mu + cg / 2) * (k_r - k_zT) * k_zL ** 2 - 2 * k_r ** 2 * k_zL * k_zT * mu + k_r ** 4 * cg / 2 - k_r ** 2 * k_zT ** 2 * cg / 2) * (k_r ** 2 + k_zT * k_zL)) / k_zT / k_zL
 
 
 
@@ -153,7 +153,7 @@ rectangle = RectangleContour(real_min, real_max, imag_min, imag_max)
 # all_roots = rootfinder.find_roots_domain(rectangle, max_roots_per_domain=4, max_depth=5, debug=True)
 
 # test version of above
-all_roots = rootfinder.find_roots_domain_test(rectangle, max_roots_per_domain=1, max_depth=15, debug=True)
+all_roots = rootfinder.find_roots_domain_test(rectangle, max_roots_per_domain=3, max_depth=15, debug=True)
 
 
 

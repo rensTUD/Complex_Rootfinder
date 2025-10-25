@@ -11,7 +11,7 @@ from shapely.geometry.polygon import orient
 # %% CLASSES
 
 class ContourBase(ABC):
-    @abstractmethod
+    # @abstractmethod
     def Z(self) -> np.ndarray:
         """Return array of complex numbers defining the contour."""
         pass
@@ -20,6 +20,38 @@ class ContourBase(ABC):
     def subdivide(self) -> list:
         """Return list of new ContourBase-derived instances (subdomains)."""
         pass
+    
+    def resample_from_boundary(boundary: Polygon, dz: float = None, n_points: int = None) -> np.ndarray:
+        """
+        Resample the exterior of a polygon boundary into complex points.
+    
+        Parameters
+        ----------
+        boundary : shapely.geometry.Polygon
+            The polygon to resample.
+        dz : float, optional
+            Desired arc-length spacing between points.
+        n_points : int, optional
+            Number of points to sample.
+    
+        Returns
+        -------
+        np.ndarray
+            Complex-valued array of points tracing the boundary.
+        """
+        line = LineString(boundary.exterior.coords)
+        length = line.length
+    
+        if dz is not None:
+            n_points = max(int(np.ceil(length / dz)), 3)
+        elif n_points is not None:
+            n_points = max(int(n_points), 3)
+        else:
+            raise ValueError("You must specify either dz or n_points")
+    
+        distances = np.linspace(0, length, n_points)
+        points = [line.interpolate(d) for d in distances]
+        return np.array([complex(p.x, p.y) for p in points])
 
 class RectangleContour(ContourBase):
     def __init__(
@@ -261,7 +293,7 @@ class CircleContour(ContourBase):
             (self.center.imag - self.radius, self.center.imag + self.radius)
         ]
 
-class CompositeContour:
+class CompositeContour(ContourBase):
     def __init__(
         self, 
         segments: List[np.ndarray],

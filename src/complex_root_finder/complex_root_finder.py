@@ -109,7 +109,7 @@ class ComplexRootFinder:
             n_divide = n_divide,
             max_roots_per_domain = max_roots_per_domain,
             max_depth = max_depth,
-            debug=False)
+            debug=debug)
         
         # find roots
         all_roots = self.find_all_roots_in_domains(

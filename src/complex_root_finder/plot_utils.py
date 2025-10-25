@@ -8,6 +8,7 @@ Created on Thu Apr 10 11:03:14 2025
 # %% IMPORTS
 import numpy as np
 import matplotlib.pyplot as plt
+from shapely.geometry import Polygon, LineString, MultiLineString
     
 # %% FUNCTIONS
 
@@ -49,3 +50,43 @@ def debug_plot_contours(
         ax.legend()
 
     plt.pause(pause)
+
+def plot_boundary_orientation(contour, num_arrows=10):
+    """
+    Plot the .boundary of a contour with arrows showing orientation.
+
+    Parameters
+    ----------
+    contour : object
+        Must have a `.boundary` attribute (shapely Polygon).
+    num_arrows : int
+        Number of arrows to show along the boundary.
+    """
+    boundary = contour.boundary
+    
+    if not isinstance(boundary, Polygon):
+        raise TypeError(f"Expected boundary to be a Polygon, got {type(boundary)}")
+    
+    coords = list(boundary.exterior.coords)
+    x, y = zip(*coords)
+
+    fig, ax = plt.subplots()
+    ax.plot(x, y, '.', label='Boundary')
+
+    # Plot arrows
+    total_points = len(x) - 1  # last point repeats
+    step = max(1, total_points // num_arrows)
+
+    for i in range(0, total_points, step):
+        ax.annotate(
+            '', 
+            xy=(x[i+1], y[i+1]), 
+            xytext=(x[i], y[i]),
+            arrowprops=dict(arrowstyle='->', color='red', lw=1),
+            size=15
+        )
+
+    # ax.set_aspect('equal')
+    ax.legend()
+    plt.title(f'Boundary Orientation ({type(contour).__name__})')
+    plt.show()
